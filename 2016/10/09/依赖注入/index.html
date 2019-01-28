@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="周豪, zhouhao, 周豪的博客，zhouhao blog， 博客，个人网站，android， 安卓，笔记，移动端">
+    <meta name="keywords"  content="">
+    <meta name="theme-color" content="">
+    
+    <title>依赖注入 - 周豪的博客 | Zhouhao Blog</title>
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/pwa/manifest.json">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/img/favicon.ico">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="http://zhouhaoh.com/2016/10/09/%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Zhouhao Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/notebook/">notebook</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    var __HuxNav__ = {
+        close: function(){
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        },
+        open: function(){
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+
+    // Bind Event
+    $toggle.addEventListener('click', function(e){
+        if ($navbar.className.indexOf('in') > 0) {
+            __HuxNav__.close()
+        }else{
+            __HuxNav__.open()
+        }
+    })
+
+    /**
+     * Since Fastclick is used to delegate 'touchstart' globally
+     * to hack 300ms delay in iOS by performing a fake 'click',
+     * Using 'e.stopPropagation' to stop 'touchstart' event from 
+     * $toggle/$collapse will break global delegation.
+     * 
+     * Instead, we use a 'e.target' filter to prevent handler
+     * added to document close HuxNav.  
+     *
+     * Also, we use 'click' instead of 'touchstart' as compromise
+     */
+    document.addEventListener('click', function(e){
+        if(e.target == $toggle) return;
+        if(e.target.className == 'icon-bar') return;
+        __HuxNav__.close();
+    })
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/banner/IMG_6502.JPG" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        position: relative;
+        background-image: url('/img/banner/IMG_6502.JPG')
+    }
+
+    
+</style>
+<header class="intro-header" >
+    <div class="header-mask"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#Android" title="Android">Android</a>
+                        
+                    </div>
+                    <h1>依赖注入</h1>
+                    
+                    
+                    <h2 class="subheading">依赖注入(Dependency Injection)相关的开源框架</h2>
+                    
+                    <span class="meta">Posted by zhouhaoo on 2016年10月09日</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<p>　　为什么要使用依赖注入呢？因为依赖注入是实现控制反转的方式之一(另一方式是依赖查找),目的就是为了让调用者和被调用者之间解耦，另外可以注入依赖的模拟实现,使得测试变得更加简单.
+<!-- more --></p>
+<ul>
+  <li>
+    <p>依赖(Dependency)</p>
+
+    <ul>
+      <li>如果在ClassA中用到了ClassB的实例,我们通常会直接new一个ClassB的对象,这种情况称为调用者ClassA对被调用者ClassB有一个依赖</li>
+      <li>例如下面的代码中HRSystem就依赖与Person.</li>
+      <li>示例代码中Person这种直接初始化的方式也叫Hard Init方式,弊端在于两个类之间不够独立,如果我们更改了Person的构造函数,所有使用到Person初始化方法的代码都要进行修改.</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>			<span class="kd">public</span> <span class="kd">class</span> <span class="nc">HRSystem</span> <span class="o">{</span>
+			
+				<span class="kd">public</span> <span class="o">/</span><span class="n">img</span><span class="o">/</span><span class="n">ky</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+					<span class="n">Person</span> <span class="n">person</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Person</span><span class="o">();</span>
+			
+				<span class="o">}</span>
+			<span class="o">}</span>
+</code></pre></div></div>
+
+<ul>
+  <li>
+    <p>依赖注入(DI:Dependency Injection):</p>
+
+    <ul>
+      <li>指程序运行过程中,调用者(HRSystem)需要被调用者(Person)的辅助,但是创建被调用者(Person)的工作不再由调用者(HRSystem)来完成,因此称为<strong>控制反转(IOC:Inversion of Control)</strong>,而是由相关的容器控制程序将被调用者(Person)的对象在外部创建出来并注入到调用者(HRSystem)的引用中。</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>			<span class="kd">public</span> <span class="kd">class</span> <span class="nc">HRSystem</span> <span class="o">{</span>
+
+				<span class="nd">@Inject</span>
+				<span class="n">Person</span> <span class="n">person</span><span class="o">;</span>
+
+				<span class="kd">public</span> <span class="o">/</span><span class="n">img</span><span class="o">/</span><span class="n">ky</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="butterknife">Butterknife</h3>
+
+<ul>
+  <li>主页: <a href="https://github.com/JakeWharton/butterknife" title="https://github.com/JakeWharton/butterknife">https://github.com/JakeWharton/butterknife</a></li>
+  <li>用途: 主要用来简化各种初始化控件的操作</li>
+  <li>配置:
+    <ol>
+      <li>在app/build.gradle文件中dependencies节点添加如下代码
+        <ul>
+          <li>compile ‘com.jakewharton:butterknife:7.0.1’</li>
+        </ul>
+      </li>
+      <li>在Android Studio中点击 File–&gt;Settings–&gt;Plugins–&gt;Browse repositories,搜索Android ButterKnife Zelezny插件,安装成功以后重启Android Studio.</li>
+      <li>在布局文件中添加控件的时候,所有需要在Activity/Fragment代码中进行控制的控件都要添加id属性</li>
+      <li>在Activity/Fragment 代码中,将鼠标放在布局文件的引用上(即R.layout.activity_main中的activity_main上面),此时按快捷键Alt + Insert或鼠标右键选择Generate</li>
+      <li>在弹出的菜单中选择Generate ButterKnife Injections,此时会再次弹出一个对话框</li>
+      <li>新的对话框中点击confirm后直接生成控件的引用,代替findViewById</li>
+      <li>如果需要处理控件的点击事件,可以选择对应控件的OnClick复选框.</li>
+      <li>如果是ListView的Item视图,还可以选择左下角的Create ViewHolder复选框,生成ViewHolder静态类.</li>
+    </ol>
+  </li>
+  <li>
+    <p>技巧
+  在AndroidStudio\plugins\android\lib\templates\gradle-projects\NewAndroidModule\recipe.xml.ftl中添加如下代码,以后新创建的工程默认会添加Butterknife依赖:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>      &lt;dependency mavenUrl="com.jakewharton:butterknife:7.0.1" /&gt;
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h3 id="androidannotations">AndroidAnnotations</h3>
+
+<ul>
+  <li>主页: <a href="http://androidannotations.org/">http://androidannotations.org/</a></li>
+  <li>用途:
+    <ol>
+      <li>使用依赖注入Views,extras,System Service,resources</li>
+      <li>简化线程模型</li>
+      <li>事件绑定</li>
+      <li>REST Client</li>
+    </ol>
+  </li>
+  <li>配置:
+    <ol>
+      <li>在project/build.gradle 文件中按下图所示添加代码:</li>
+    </ol>
+  </li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="n">mavenCentral</span><span class="o">()</span>
+	<span class="n">classpath</span> <span class="err">'</span><span class="n">com</span><span class="o">.</span><span class="na">neenbedankt</span><span class="o">.</span><span class="na">gradle</span><span class="o">.</span><span class="na">plugins</span><span class="o">:</span><span class="n">android</span><span class="o">-</span><span class="nl">apt:</span><span class="mf">1.8</span><span class="err">'</span>
+	<span class="n">mavenCentral</span><span class="o">()</span>
+	<span class="n">mavenLocal</span><span class="o">()</span>
+</code></pre></div></div>
+
+<p><img src="/img/ky/androidAnnatations_project.png" alt="logo" /></p>
+
+<ol>
+  <li>在app/build.gradle 文件中按下图所示添加代码:</li>
+</ol>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>		<span class="n">apply</span> <span class="nl">plugin:</span> <span class="err">'</span><span class="n">android</span><span class="o">-</span><span class="n">apt</span><span class="err">'</span>
+	<span class="n">apt</span> <span class="o">{</span>
+				    <span class="n">arguments</span> <span class="o">{</span>
+       <span class="n">androidManifestFile</span> <span class="n">variant</span><span class="o">.</span><span class="na">outputs</span><span class="o">[</span><span class="mi">0</span><span class="o">]?.</span><span class="na">processResources</span><span class="o">?.</span><span class="na">manifestFile</span>
+	    <span class="o">}</span>
+	<span class="o">}</span>
+	<span class="n">apt</span> <span class="s">"org.androidannotations:androidannotations:4.0.0"</span>
+	<span class="n">compile</span> <span class="s">"org.androidannotations:androidannotations-api:4.0.0"</span>
+</code></pre></div></div>
+
+<p><img src="/img/ky/androidAnnatations_app.png" alt="logo" /></p>
+
+<ul>
+  <li>
+    <p>注意事项:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  * Manifest中注册的activity要在原类名后追加下划线”_”
+  * 使用注解的控件和方法不能使用private修饰符	
+  * 大型项目并不适用
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h3 id="dagger2">Dagger2</h3>
+<ul>
+  <li>
+    <p>主页: <a href="https://github.com/google/dagger">https://github.com/google/dagger</a></p>
+  </li>
+  <li>历史:
+    <ul>
+      <li>Dagger1是由Square公司受到Guice(<a href="https://github.com/google/guice">https://github.com/google/guice</a>)启发创建的依赖注入框架.</li>
+      <li>Dagger2是Dagger1(<a href="https://github.com/square/dagger">https://github.com/square/dagger</a>)的分支，由谷歌开发.该项目受到了Auto项目(<a href="https://github.com/google/auto">https://github.com/google/auto</a>)的启发</li>
+      <li>Dagger2的优点
+        <ul>
+          <li>没有使用反射,图的验证、配置和预先设置都在编译的时候执行</li>
+          <li>容易调试,完全具体地调用提供和创建的堆栈</li>
+          <li>更高的性能,谷歌声称他们提高了13%的处理性能</li>
+          <li>代码混淆,使用派遣方法，就如同自己写的代码一样</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>配置:
+    <ol>
+      <li>在project/build.gradle 文件中按下图所示添加代码:  classpath ‘com.neenbedankt.gradle.plugins:android-apt:1.8’ .
+  <img src="/img/ky/dagger2_project.png" alt="icon" /></li>
+      <li>
+        <p>在app/build.gradle 文件中按下图所示添加代码:</p>
+
+        <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   * apply plugin: 'com.neenbedankt.android-apt'
+   * compile 'com.google.dagger:dagger:2.2'
+   	* apt 'com.google.dagger:dagger-compiler:2.2'
+   	* provided 'org.glassfish:javax.annotation:10.0-b28'   ![Logo](/img/ky/dagger2_app.png)
+</code></pre></div>        </div>
+      </li>
+    </ol>
+  </li>
+  <li>主要的注解:
+    <ul>
+      <li>@Provides: 用来修饰方法，方法的返回类型就是所提供的依赖类型，可以简单的把方法的返回值理解为我们通常要new出来的对象.
+        <ul>
+          <li>@Provides方法都会用provide作为前缀</li>
+        </ul>
+      </li>
+      <li>@Module: 所有的@Provides方法都必须放到一个Moudle中,一个Moudle就是使用@Moudle修饰的类,可以简单的理解为一个持有各种对象的仓库.用来给@Component组件提供实例化的对象.
+        <ul>
+          <li>Android中有三种Module:ApplicationModule，ActivityModule，UserModule,分别提供整个应用级别的（只生成一个该组件的实例），Activity级别的，用户级别的Module。</li>
+          <li>@Module类都用Module作为后缀</li>
+        </ul>
+      </li>
+      <li>@Inject: 通常在需要依赖的地方使用这个注解,简单的理解为声明一个对象</li>
+      <li>@Component 它是@Inject和@Module的桥梁，它的主要作用就是连接这两个部分.
+        <ul>
+          <li>我们必须用@Component注解一个接口,为该注解传入Module类，或者添加其依赖的组件</li>
+          <li>@Component注解的接口或抽象类以Component为后缀</li>
+        </ul>
+      </li>
+      <li>@Component的实现类
+        <ul>
+          <li>@Component注解的接口或抽象类，Dagger将会为该接口或者抽象类生成一个实现，这个实现的命名是在接口或抽象类前面加上Dagger，如MyComponent生成的实现是DaggerMyComponent</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>使用步骤:
+    <ol>
+      <li>创建Module,并在其中创建Provides.示例代码:
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>     <span class="nd">@Module</span>
+     <span class="kd">public</span> <span class="kd">class</span> <span class="nc">MainActivityModuel</span> <span class="o">{</span>
+         <span class="nd">@Provides</span>
+         <span class="n">User</span> <span class="nf">provideUser</span><span class="o">(){</span>
+             <span class="k">return</span>  <span class="k">new</span> <span class="nf">User</span><span class="o">(</span><span class="s">"zhangsan"</span><span class="o">,</span> <span class="mi">12</span><span class="o">,</span><span class="s">"18612345678"</span><span class="o">);</span>
+         <span class="o">}</span>
+     <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>创建Component.示例代码:
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>     <span class="nd">@Component</span><span class="o">(</span><span class="n">modules</span> <span class="o">=</span> <span class="n">MainActivityModuel</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+     <span class="kd">public</span> <span class="kd">interface</span> <span class="nc">MainActivityComponent</span> <span class="o">{</span>
+         <span class="kt">void</span> <span class="nf">inject</span><span class="o">(</span><span class="n">MainActivity</span> <span class="n">activity</span><span class="o">);</span>
+     <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li>Rebuild工程,生成对应的以Dagger开始的工具类</li>
+      <li>利用对应的以Dagger工具类初始化,并注入对象.示例代码:</li>
+    </ol>
+  </li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>			<span class="kd">public</span> <span class="kd">class</span> <span class="nc">MainActivity</span> <span class="kd">extends</span> <span class="n">AppCompatActivity</span> <span class="o">{</span>
+			    <span class="nd">@Inject</span>
+			    <span class="n">User</span> <span class="n">user</span><span class="o">;</span>
+			
+			    <span class="nd">@Override</span>
+			    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onCreate</span><span class="o">(</span><span class="n">Bundle</span> <span class="n">savedInstanceState</span><span class="o">)</span> <span class="o">{</span>
+			        <span class="kd">super</span><span class="o">.</span><span class="na">onCreate</span><span class="o">(</span><span class="n">savedInstanceState</span><span class="o">);</span>
+			        <span class="n">setContentView</span><span class="o">(</span><span class="n">R</span><span class="o">.</span><span class="na">layout</span><span class="o">.</span><span class="na">activity_main</span><span class="o">);</span>
+			        <span class="n">MainActivityComponent</span> <span class="n">component</span> <span class="o">=</span> <span class="n">DaggerMainActivityComponent</span><span class="o">.</span><span class="na">builder</span><span class="o">().</span><span class="na">mainActivityModuel</span><span class="o">(</span><span class="k">new</span> <span class="n">MainActivityModuel</span><span class="o">()).</span><span class="na">build</span><span class="o">();</span>
+			        <span class="n">component</span><span class="o">.</span><span class="na">inject</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+			    <span class="o">}</span>
+			<span class="o">}</span>
+</code></pre></div></div>
+
+
+                <hr style="visibility: hidden;">
+
+                
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2016/09/02/rxjava-retrofit/" data-toggle="tooltip" data-placement="top" title="响应式编程 rxjava">
+                        Previous<br>
+                        <span>响应式编程 rxjava</span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/2018/02/10/kotlin-common/" data-toggle="tooltip" data-placement="top" title="kotlin-common">
+                        Next<br>
+                        <span>kotlin-common</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+
+
+                
+
+                
+
+            </div>  
+
+    <!-- Side Catalog Container -->
+        
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+                				<a href="/tags/#博客" title="博客" rel="2">
+                                    博客
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Android" title="Android" rel="11">
+                                    Android
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+                				<a href="/tags/#笔记" title="笔记" rel="2">
+                                    笔记
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#网络请求" title="网络请求" rel="2">
+                                    网络请求
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#源码分析" title="源码分析" rel="2">
+                                    源码分析
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="https://changweiba.github.io/">常尾巴</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'always',
+          placement: 'right',
+          icon: '#'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    
+                    <li>
+                        <a href="https://twitter.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    <li>
+                        <a target="_blank" href="https://www.facebook.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Zhouhao Blog 2019
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> | Powered by <a
+                        href="http://jekyllrb.com/">jekyll</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+<!-- Service Worker -->
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/ 
+     - https://github.com/jneen/rouge/wiki/list-of-supported-languages-and-lexers   
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async('/js/jquery.tagcloud.js',function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-120305049-1';
+    var _gaDomain = 'auto';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Side Catalog -->
+
+
+
+
+
+<!-- Image to hack wechat -->
+<img src="/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

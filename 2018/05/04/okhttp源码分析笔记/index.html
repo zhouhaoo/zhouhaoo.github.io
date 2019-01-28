@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="周豪, zhouhao, 周豪的博客，zhouhao blog， 博客，个人网站，android， 安卓，笔记，移动端">
+    <meta name="keywords"  content="">
+    <meta name="theme-color" content="">
+    
+    <title>okhttp源码分析笔记 - 周豪的博客 | Zhouhao Blog</title>
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/pwa/manifest.json">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/img/favicon.ico">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="http://zhouhaoh.com/2018/05/04/okhttp%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E7%AC%94%E8%AE%B0/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Zhouhao Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/notebook/">notebook</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    var __HuxNav__ = {
+        close: function(){
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        },
+        open: function(){
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+
+    // Bind Event
+    $toggle.addEventListener('click', function(e){
+        if ($navbar.className.indexOf('in') > 0) {
+            __HuxNav__.close()
+        }else{
+            __HuxNav__.open()
+        }
+    })
+
+    /**
+     * Since Fastclick is used to delegate 'touchstart' globally
+     * to hack 300ms delay in iOS by performing a fake 'click',
+     * Using 'e.stopPropagation' to stop 'touchstart' event from 
+     * $toggle/$collapse will break global delegation.
+     * 
+     * Instead, we use a 'e.target' filter to prevent handler
+     * added to document close HuxNav.  
+     *
+     * Also, we use 'click' instead of 'touchstart' as compromise
+     */
+    document.addEventListener('click', function(e){
+        if(e.target == $toggle) return;
+        if(e.target.className == 'icon-bar') return;
+        __HuxNav__.close();
+    })
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/banner/post-bg-okhttp.jpg" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        position: relative;
+        background-image: url('/img/banner/post-bg-okhttp.jpg')
+    }
+
+    
+</style>
+<header class="intro-header" >
+    <div class="header-mask"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#Android" title="Android">Android</a>
+                        
+                        <a class="tag" href="/tags/#OKhttp" title="OKhttp">OKhttp</a>
+                        
+                        <a class="tag" href="/tags/#笔记" title="笔记">笔记</a>
+                        
+                        <a class="tag" href="/tags/#网络请求" title="网络请求">网络请求</a>
+                        
+                        <a class="tag" href="/tags/#源码分析" title="源码分析">源码分析</a>
+                        
+                    </div>
+                    <h1>okhttp源码分析笔记</h1>
+                    
+                    
+                    <h2 class="subheading">"最流行的android网络请求框架，没有之一"</h2>
+                    
+                    <span class="meta">Posted by zhouhaoo on 2018年05月04日</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<p>下面将通过同步和异步的基本使用方式、<code class="highlighter-rouge">Dispatcher</code>作用、主要的拦截器功能、缓存策略以及连接池，一步步分析底层实现流程。
+<!-- more --></p>
+<h3 id="基本使用大致分析">基本使用大致分析</h3>
+
+<p><code class="highlighter-rouge">OkHttpClient</code>有两种请求的方式，一是同步请求，二是异步请求。下面先简单看下两种请求的不同使用方法，然后简略看看请求内部运作流程，得出一个大致了解后，有个整体印象，抓住关键点。</p>
+
+<h4 id="同步请求">同步请求</h4>
+
+<p>同步请求示例：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//第一步：实例化OkHttpClient对象</span>
+<span class="n">OkHttpClient</span> <span class="n">client</span> <span class="o">=</span> <span class="k">new</span> <span class="n">OkHttpClient</span><span class="o">();</span>
+		<span class="c1">//第二步：创建一个requset对象</span>
+        <span class="n">Request</span> <span class="n">request</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Request</span>
+                <span class="o">.</span><span class="na">Builder</span><span class="o">()</span>
+                <span class="o">.</span><span class="na">url</span><span class="o">(</span><span class="s">"http://www.zhouhaoh.com"</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="c1">//第三步:用OkHttpClient执行同步请求</span>
+            <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">newCall</span><span class="o">(</span><span class="n">request</span><span class="o">).</span><span class="na">execute</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">isSuccessful</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"requset success"</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+</code></pre></div></div>
+
+<ol>
+  <li>
+    <p>实例化OkHttpClient</p>
+
+    <p>在第一步实例化一个<strong><code class="highlighter-rouge">OkHttpClient</code></strong>对象的时候，okhttp利用构建者模式在内部已经做了很多初始化的准备了，跟着代码往下，<code class="highlighter-rouge">OkHttpClient</code>利用内部类<code class="highlighter-rouge">builder</code>初始化了很多配置，比如分发器<strong><code class="highlighter-rouge">Dispatcher</code></strong>，<strong><code class="highlighter-rouge">ConnectionPool</code></strong>连接池等等，这样我们才能在<code class="highlighter-rouge">new OkHttpClient()</code>的时候， 已经是一个可用的客户端了。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">Builder</span> <span class="o">{</span>
+    <span class="n">Dispatcher</span> <span class="n">dispatcher</span><span class="o">;</span>
+    <span class="nd">@Nullable</span> <span class="n">Proxy</span> <span class="n">proxy</span><span class="o">;</span>
+    <span class="n">List</span><span class="o">&lt;</span><span class="n">Protocol</span><span class="o">&gt;</span> <span class="n">protocols</span><span class="o">;</span>
+     <span class="o">...</span>
+    <span class="kd">public</span> <span class="nf">Builder</span><span class="o">()</span> <span class="o">{</span>
+      <span class="n">dispatcher</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Dispatcher</span><span class="o">();</span>
+      <span class="n">protocols</span> <span class="o">=</span> <span class="n">DEFAULT_PROTOCOLS</span><span class="o">;</span>
+      <span class="n">connectionSpecs</span> <span class="o">=</span> <span class="n">DEFAULT_CONNECTION_SPECS</span><span class="o">;</span>
+      <span class="n">eventListenerFactory</span> <span class="o">=</span> <span class="n">EventListener</span><span class="o">.</span><span class="na">factory</span><span class="o">(</span><span class="n">EventListener</span><span class="o">.</span><span class="na">NONE</span><span class="o">);</span>
+      <span class="o">...</span>
+      <span class="n">connectionPool</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ConnectionPool</span><span class="o">();</span>
+      <span class="n">dns</span> <span class="o">=</span> <span class="n">Dns</span><span class="o">.</span><span class="na">SYSTEM</span><span class="o">;</span>
+      <span class="n">followSslRedirects</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+      <span class="n">followRedirects</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+      <span class="n">retryOnConnectionFailure</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+      <span class="n">connectTimeout</span> <span class="o">=</span> <span class="mi">10_000</span><span class="o">;</span>
+      <span class="o">...</span>
+    <span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>创建Request对象。</p>
+
+    <p>创建一个<code class="highlighter-rouge">requset</code>对象，这个是<code class="highlighter-rouge">OkHttpClient</code>封装的请求对象，所有的与请求有关的配置都通过<code class="highlighter-rouge">Requset</code>的内部类<code class="highlighter-rouge">Builder</code>构建，能设置请求的url，请求头，请求体，请求方式等等。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">Builder</span> <span class="o">{</span>
+    <span class="n">HttpUrl</span> <span class="n">url</span><span class="o">;</span>
+    <span class="n">String</span> <span class="n">method</span><span class="o">;</span>
+    <span class="n">Headers</span><span class="o">.</span><span class="na">Builder</span> <span class="n">headers</span><span class="o">;</span>
+    <span class="n">RequestBody</span> <span class="n">body</span><span class="o">;</span>
+    <span class="n">Object</span> <span class="n">tag</span><span class="o">;</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>创建RealCall对象。</p>
+
+    <p>同步最后的是<strong><code class="highlighter-rouge">client.newCall(request).execute()</code></strong> 进行同步请求，实例化好的<code class="highlighter-rouge">Requset</code>对象，不管同步和异步，都是调用了<code class="highlighter-rouge">OkhttpClient</code>的一个<code class="highlighter-rouge">newCall</code>对象，跟代码发现：<code class="highlighter-rouge">newCall</code>方法最终实例化出了一个RealCall对象，并持有<strong>OkHttpClient</strong>对象，在构造方法中也是做一个监听器，拦截器成员变量的赋值。最终发现，发起请求的是这个<code class="highlighter-rouge">RealCall</code>对象。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//RealCall.java</span>
+<span class="n">RealCall</span><span class="o">(</span><span class="n">OkHttpClient</span> <span class="n">client</span><span class="o">,</span> <span class="n">Request</span> <span class="n">originalRequest</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">forWebSocket</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kd">final</span> <span class="n">EventListener</span><span class="o">.</span><span class="na">Factory</span> <span class="n">eventListenerFactory</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">eventListenerFactory</span><span class="o">();</span>
+   
+    <span class="k">this</span><span class="o">.</span><span class="na">client</span> <span class="o">=</span> <span class="n">client</span><span class="o">;</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">originalRequest</span> <span class="o">=</span> <span class="n">originalRequest</span><span class="o">;</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">forWebSocket</span> <span class="o">=</span> <span class="n">forWebSocket</span><span class="o">;</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">retryAndFollowUpInterceptor</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RetryAndFollowUpInterceptor</span><span class="o">(</span><span class="n">client</span><span class="o">,</span> <span class="n">forWebSocket</span><span class="o">);</span>
+   
+    <span class="c1">// TODO(jwilson): this is unsafe publication and not threadsafe.</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">eventListener</span> <span class="o">=</span> <span class="n">eventListenerFactory</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>发起同步请求</p>
+
+    <p>最终<strong><code class="highlighter-rouge">RealCall.execute()</code></strong>,才是请求的执行者，下面是<strong><code class="highlighter-rouge">execute</code></strong>方法，有一个<code class="highlighter-rouge">synchronized</code>代码，加一个标志位<code class="highlighter-rouge">exexuted</code>，这个是为了判断时候执行过本次请求，假如已经被执行，如果再次调用执行就抛出异常。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//RealCall.java</span>
+<span class="nd">@Override</span> <span class="kd">public</span> <span class="n">Response</span> <span class="nf">execute</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+    <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">executed</span><span class="o">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalStateException</span><span class="o">(</span><span class="s">"Already Executed"</span><span class="o">);</span>
+      <span class="n">executed</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="n">captureCallStackTrace</span><span class="o">();</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="o">/</span>
+      <span class="n">client</span><span class="o">.</span><span class="na">dispatcher</span><span class="o">().</span><span class="na">executed</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+      <span class="n">Response</span> <span class="n">result</span> <span class="o">=</span> <span class="n">getResponseWithInterceptorChain</span><span class="o">();</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">result</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">IOException</span><span class="o">(</span><span class="s">"Canceled"</span><span class="o">);</span>
+      <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+    <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+      <span class="n">client</span><span class="o">.</span><span class="na">dispatcher</span><span class="o">().</span><span class="na">finished</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <p>继续后面代码发现，将本次请求加入了<strong><code class="highlighter-rouge">dispatcher</code></strong>分发器的同步队列（后面详细分析），然后，调用了一个叫做<strong><code class="highlighter-rouge">getResponseWithInterceptorChain(</code>)</strong>的方法，就返回了一个<code class="highlighter-rouge">Response</code>对象，最终发回给调用者了，那很明显，所有的请求关键就在这个<code class="highlighter-rouge">getResponseWithInterceptorChain</code>方法了。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Response</span> <span class="nf">getResponseWithInterceptorChain</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+    <span class="c1">// Build a full stack of interceptors.</span>
+    <span class="n">List</span><span class="o">&lt;</span><span class="n">Interceptor</span><span class="o">&gt;</span> <span class="n">interceptors</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;();</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">client</span><span class="o">.</span><span class="na">interceptors</span><span class="o">());</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">retryAndFollowUpInterceptor</span><span class="o">);</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">BridgeInterceptor</span><span class="o">(</span><span class="n">client</span><span class="o">.</span><span class="na">cookieJar</span><span class="o">()));</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">CacheInterceptor</span><span class="o">(</span><span class="n">client</span><span class="o">.</span><span class="na">internalCache</span><span class="o">()));</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">ConnectInterceptor</span><span class="o">(</span><span class="n">client</span><span class="o">));</span>
+    <span class="k">if</span> <span class="o">(!</span><span class="n">forWebSocket</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">interceptors</span><span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">client</span><span class="o">.</span><span class="na">networkInterceptors</span><span class="o">());</span>
+    <span class="o">}</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">CallServerInterceptor</span><span class="o">(</span><span class="n">forWebSocket</span><span class="o">));</span>
+   
+    <span class="n">Interceptor</span><span class="o">.</span><span class="na">Chain</span> <span class="n">chain</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RealInterceptorChain</span><span class="o">(</span>
+        <span class="n">interceptors</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">originalRequest</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">chain</span><span class="o">.</span><span class="na">proceed</span><span class="o">(</span><span class="n">originalRequest</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <p>此方法就是<code class="highlighter-rouge">OkHttpClient</code>的拦截器链，先看整体，后面分析。</p>
+  </li>
+</ol>
+
+<h4 id="异步请求">异步请求</h4>
+
+<p>异步请求示例：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="n">OkHttpClient</span> <span class="n">client</span> <span class="o">=</span> <span class="k">new</span> <span class="n">OkHttpClient</span><span class="o">();</span>
+        <span class="n">Request</span> <span class="n">request</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Request</span>
+                <span class="o">.</span><span class="na">Builder</span><span class="o">()</span>
+                <span class="o">.</span><span class="na">url</span><span class="o">(</span><span class="s">"http://www.zhouhaoh.com"</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+        <span class="n">client</span><span class="o">.</span><span class="na">newCall</span><span class="o">(</span><span class="n">request</span><span class="o">).</span><span class="na">enqueue</span><span class="o">(</span><span class="k">new</span> <span class="n">Callback</span><span class="o">()</span> <span class="o">{</span>
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onFailure</span><span class="o">(</span><span class="n">Call</span> <span class="n">call</span><span class="o">,</span> <span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"requset fail"</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onResponse</span><span class="o">(</span><span class="n">Call</span> <span class="n">call</span><span class="o">,</span> <span class="n">Response</span> <span class="n">response</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">isSuccessful</span><span class="o">())</span> <span class="o">{</span>
+                    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"requset success"</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">});</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>异步请求结果回调是在子线程，如需要进行UI更新的操作，需要切换线程。</p>
+</blockquote>
+
+<p>看完同步请求的用法，再看异步请求，发现同样的套路，实例化<code class="highlighter-rouge">OkHttpClient</code>对象，创建<code class="highlighter-rouge">Requset</code>，<code class="highlighter-rouge">newCall</code>…，只不过最后调用的<strong><code class="highlighter-rouge">enqueue()</code></strong>方法。传入一个回调函数。见代码：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Override</span> 
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">enqueue</span><span class="o">(</span><span class="n">Callback</span> <span class="n">responseCallback</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">executed</span><span class="o">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalStateException</span><span class="o">(</span><span class="s">"Already Executed"</span><span class="o">);</span>
+      <span class="n">executed</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="n">captureCallStackTrace</span><span class="o">();</span>
+    <span class="n">client</span><span class="o">.</span><span class="na">dispatcher</span><span class="o">().</span><span class="na">enqueue</span><span class="o">(</span><span class="k">new</span> <span class="n">AsyncCall</span><span class="o">(</span><span class="n">responseCallback</span><span class="o">));</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>同样，一个同步代码块，判断后，<strong><code class="highlighter-rouge">captureCallStackTrace</code></strong>捕获异常，最终，调用<code class="highlighter-rouge">dispatcher</code>，加进异步请求对内。但是不同的是创建了一个<strong><code class="highlighter-rouge">AsyncCall</code></strong>对象。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//Dispatcher.java</span>
+<span class="kd">synchronized</span> <span class="kt">void</span> <span class="nf">enqueue</span><span class="o">(</span><span class="n">AsyncCall</span> <span class="n">call</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">runningAsyncCalls</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&lt;</span> <span class="n">maxRequests</span> <span class="o">&amp;&amp;</span> <span class="n">runningCallsForHost</span><span class="o">(</span><span class="n">call</span><span class="o">)</span> <span class="o">&lt;</span> <span class="n">maxRequestsPerHost</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">runningAsyncCalls</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">call</span><span class="o">);</span>
+      <span class="n">executorService</span><span class="o">().</span><span class="na">execute</span><span class="o">(</span><span class="n">call</span><span class="o">);</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">readyAsyncCalls</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">call</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>这个方法先从一个判断的区别就是进入if会多一个 <code class="highlighter-rouge">executorService()</code>，那就先看看这个方法调用吧。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kd">synchronized</span> <span class="n">ExecutorService</span> <span class="nf">executorService</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">executorService</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">executorService</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ThreadPoolExecutor</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">Integer</span><span class="o">.</span><span class="na">MAX_VALUE</span><span class="o">,</span> <span class="mi">60</span><span class="o">,</span> <span class="n">TimeUnit</span><span class="o">.</span><span class="na">SECONDS</span><span class="o">,</span>
+          <span class="k">new</span> <span class="n">SynchronousQueue</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;(),</span> <span class="n">Util</span><span class="o">.</span><span class="na">threadFactory</span><span class="o">(</span><span class="s">"OkHttp Dispatcher"</span><span class="o">,</span> <span class="kc">false</span><span class="o">));</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">executorService</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>原来是创建了一个线程池，这是一个网络请求任务线程池，看看创建线程池的参数可以发现，在Okhttp中，构建了一个阀值为<code class="highlighter-rouge">[0, Integer.MAX_VALUE]</code>的线程池，它不保留任何最小线程数，随时创建更多的线程数，当线程空闲时只能活60秒，在实际运行中，当收到10个并发请求时，线程池会创建十个线程，当工作完成后，线程池会在60秒后相继关闭所有线程。这一切就保证异步请求的高效执行。</p>
+
+<p>返回看看之前enqueue方法中的if判断满足以下条件：</p>
+
+<ul>
+  <li>当前请求数小于最大请求数maxRequests 64</li>
+  <li>对单一host的请求小于阈值maxRequestsPerHost  5</li>
+</ul>
+
+<p>就会把此次请求加入异步队列，放入线程池，进行请求。反之，加入等待队列。</p>
+
+<p>因为上面在分发器中<code class="highlighter-rouge">executorService().execute(call)</code>;执行。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//ReallCall.java</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="nc">AsyncCall</span> <span class="kd">extends</span> <span class="n">NamedRunnable</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">Callback</span> <span class="n">responseCallback</span><span class="o">;</span>
+
+    <span class="n">AsyncCall</span><span class="o">(</span><span class="n">Callback</span> <span class="n">responseCallback</span><span class="o">)</span> <span class="o">{</span>
+      <span class="kd">super</span><span class="o">(</span><span class="s">"OkHttp %s"</span><span class="o">,</span> <span class="n">redactedUrl</span><span class="o">());</span>
+      <span class="k">this</span><span class="o">.</span><span class="na">responseCallback</span> <span class="o">=</span> <span class="n">responseCallback</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="o">...</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>再看看<code class="highlighter-rouge">AsyncCall</code>这个类，发现是<code class="highlighter-rouge">Reallcall</code>的一个内部类,继承自<code class="highlighter-rouge">NamedRunnable</code>，继续往下看：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">abstract</span> <span class="kd">class</span> <span class="nc">NamedRunnable</span> <span class="kd">implements</span> <span class="n">Runnable</span> <span class="o">{</span>
+  <span class="kd">protected</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+
+  <span class="kd">public</span> <span class="nf">NamedRunnable</span><span class="o">(</span><span class="n">String</span> <span class="n">format</span><span class="o">,</span> <span class="n">Object</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">Util</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="n">format</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Override</span> <span class="kd">public</span> <span class="kd">final</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+    <span class="n">String</span> <span class="n">oldName</span> <span class="o">=</span> <span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getName</span><span class="o">();</span>
+    <span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">setName</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
+    <span class="k">try</span> <span class="o">{</span>
+      <span class="n">execute</span><span class="o">();</span>
+    <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+      <span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">setName</span><span class="o">(</span><span class="n">oldName</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="kd">protected</span> <span class="kd">abstract</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">NamedRunnable</code>原来实现了<code class="highlighter-rouge">Runnable</code>！！！，在run方法中，调用了抽象方法<code class="highlighter-rouge">execute()</code>，所以，当<code class="highlighter-rouge">AsyncCall</code>加入线程池的时候，真正执行的是<code class="highlighter-rouge">NamedRunnable</code>的子类<code class="highlighter-rouge">AsyncCall</code>中实现的<code class="highlighter-rouge">execute</code>方法，方法如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//AsyncCall中实现的execute方法。</span>
+<span class="nd">@Override</span>
+<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">()</span> <span class="o">{</span>
+      <span class="kt">boolean</span> <span class="n">signalledCallback</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+      <span class="k">try</span> <span class="o">{</span>
+        <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">getResponseWithInterceptorChain</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">retryAndFollowUpInterceptor</span><span class="o">.</span><span class="na">isCanceled</span><span class="o">())</span> <span class="o">{</span>
+          <span class="n">signalledCallback</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+          <span class="n">responseCallback</span><span class="o">.</span><span class="na">onFailure</span><span class="o">(</span><span class="n">RealCall</span><span class="o">.</span><span class="na">this</span><span class="o">,</span> <span class="k">new</span> <span class="n">IOException</span><span class="o">(</span><span class="s">"Canceled"</span><span class="o">));</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+          <span class="n">signalledCallback</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+          <span class="n">responseCallback</span><span class="o">.</span><span class="na">onResponse</span><span class="o">(</span><span class="n">RealCall</span><span class="o">.</span><span class="na">this</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+        <span class="o">}</span>
+      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">signalledCallback</span><span class="o">)</span> <span class="o">{</span>
+          <span class="c1">// Do not signal the callback twice!</span>
+          <span class="n">Platform</span><span class="o">.</span><span class="na">get</span><span class="o">().</span><span class="na">log</span><span class="o">(</span><span class="n">INFO</span><span class="o">,</span> <span class="s">"Callback failure for "</span> <span class="o">+</span> <span class="n">toLoggableString</span><span class="o">(),</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+          <span class="n">responseCallback</span><span class="o">.</span><span class="na">onFailure</span><span class="o">(</span><span class="n">RealCall</span><span class="o">.</span><span class="na">this</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span>
+      <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+        <span class="n">client</span><span class="o">.</span><span class="na">dispatcher</span><span class="o">().</span><span class="na">finished</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>终于发现，又是一系列判断，最后通过<code class="highlighter-rouge">ReallCall</code>中的<code class="highlighter-rouge">getResponseWithInterceptorChain()</code>获取请求结果！！！然后进行了成功和失败的回调。最终一次异步请求整体执行完成。</p>
+
+<h4 id="同步和异步整体调用总结">同步和异步整体调用总结</h4>
+
+<p>通过以上同步请求和异步请求的整体分析，总体流程大概清楚了。如下图：</p>
+
+<p><img src="/img/okhttp/请求流程.png" alt="请求流程" /></p>
+
+<p>可以得出，都是通过<code class="highlighter-rouge">dispatcher</code>加入各自的队列，然后最终的请求执行关键就是在<code class="highlighter-rouge">ReallCall</code>中的<code class="highlighter-rouge">getResponseWithInterceptorChain</code>方法 ，不同点异步调用会有一个线程池来调用，所以这也是通过异步调用的网络请求，为什么回调是在子线程的原因。下面看看关键<code class="highlighter-rouge">Dispatcher</code>类<strong>和</strong><code class="highlighter-rouge">getResponseWithInterceptorChain</code>方法了。</p>
+
+<h3 id="任务分发器-dispatcher">任务分发器 Dispatcher</h3>
+
+<p>dispatcher内部维护着三个队列以及一个线程池。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="c1">//Dispatcher.java</span>
+ <span class="cm">/** Ready async calls in the order they'll be run. */</span>
+  <span class="kd">private</span> <span class="kd">final</span> <span class="n">Deque</span><span class="o">&lt;</span><span class="n">AsyncCall</span><span class="o">&gt;</span> <span class="n">readyAsyncCalls</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayDeque</span><span class="o">&lt;&gt;();</span>
+
+  <span class="cm">/** Running asynchronous calls. Includes canceled calls that haven't finished yet. */</span>
+  <span class="kd">private</span> <span class="kd">final</span> <span class="n">Deque</span><span class="o">&lt;</span><span class="n">AsyncCall</span><span class="o">&gt;</span> <span class="n">runningAsyncCalls</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayDeque</span><span class="o">&lt;&gt;();</span>
+
+  <span class="cm">/** Running synchronous calls. Includes canceled calls that haven't finished yet. */</span>
+  <span class="kd">private</span> <span class="kd">final</span> <span class="n">Deque</span><span class="o">&lt;</span><span class="n">RealCall</span><span class="o">&gt;</span> <span class="n">runningSyncCalls</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayDeque</span><span class="o">&lt;&gt;();</span>
+
+</code></pre></div></div>
+
+<ul>
+  <li><code class="highlighter-rouge">readyAsyncCalls</code>：待执行异步任务队列</li>
+  <li><code class="highlighter-rouge">runningAsyncCalls</code>：运行中异步任务队列</li>
+  <li><code class="highlighter-rouge">runningSyncCalls</code>：运行中同步任务队列</li>
+</ul>
+
+<p>线程池在上面已经初步分析过，再看看在<code class="highlighter-rouge">ReallCall</code>中异步和同步请求的执行：</p>
+
+<ol>
+  <li>
+    <p>同步：</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Override</span> <span class="kd">public</span> <span class="n">Response</span> <span class="nf">execute</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+    <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">executed</span><span class="o">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalStateException</span><span class="o">(</span><span class="s">"Already Executed"</span><span class="o">);</span>
+      <span class="n">executed</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="n">captureCallStackTrace</span><span class="o">();</span>
+    <span class="k">try</span> <span class="o">{</span>
+      <span class="n">client</span><span class="o">.</span><span class="na">dispatcher</span><span class="o">().</span><span class="na">executed</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+      <span class="n">Response</span> <span class="n">result</span> <span class="o">=</span> <span class="n">getResponseWithInterceptorChain</span><span class="o">();</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">result</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">IOException</span><span class="o">(</span><span class="s">"Canceled"</span><span class="o">);</span>
+      <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+    <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+      <span class="n">client</span><span class="o">.</span><span class="na">dispatcher</span><span class="o">().</span><span class="na">finished</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>异步：</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span> <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">()</span> <span class="o">{</span>
+      <span class="kt">boolean</span> <span class="n">signalledCallback</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+      <span class="k">try</span> <span class="o">{</span>
+        <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">getResponseWithInterceptorChain</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">retryAndFollowUpInterceptor</span><span class="o">.</span><span class="na">isCanceled</span><span class="o">())</span> <span class="o">{</span>
+          <span class="n">signalledCallback</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+          <span class="n">responseCallback</span><span class="o">.</span><span class="na">onFailure</span><span class="o">(</span><span class="n">RealCall</span><span class="o">.</span><span class="na">this</span><span class="o">,</span> <span class="k">new</span> <span class="n">IOException</span><span class="o">(</span><span class="s">"Canceled"</span><span class="o">));</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+          <span class="n">signalledCallback</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+          <span class="n">responseCallback</span><span class="o">.</span><span class="na">onResponse</span><span class="o">(</span><span class="n">RealCall</span><span class="o">.</span><span class="na">this</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+        <span class="o">}</span>
+      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">signalledCallback</span><span class="o">)</span> <span class="o">{</span>
+          <span class="c1">// Do not signal the callback twice!</span>
+          <span class="n">Platform</span><span class="o">.</span><span class="na">get</span><span class="o">().</span><span class="na">log</span><span class="o">(</span><span class="n">INFO</span><span class="o">,</span> <span class="s">"Callback failure for "</span> <span class="o">+</span> <span class="n">toLoggableString</span><span class="o">(),</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+          <span class="n">responseCallback</span><span class="o">.</span><span class="na">onFailure</span><span class="o">(</span><span class="n">RealCall</span><span class="o">.</span><span class="na">this</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span>
+      <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+        <span class="n">client</span><span class="o">.</span><span class="na">dispatcher</span><span class="o">().</span><span class="na">finished</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<p>发现最终都会调用<code class="highlighter-rouge">dispatcher</code>的<code class="highlighter-rouge">finished</code>方法。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kd">private</span> <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="nf">finished</span><span class="o">(</span><span class="n">Deque</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">calls</span><span class="o">,</span> <span class="n">T</span> <span class="n">call</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">promoteCalls</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">runningCallsCount</span><span class="o">;</span>
+    <span class="n">Runnable</span> <span class="n">idleCallback</span><span class="o">;</span>
+    <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(!</span><span class="n">calls</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">call</span><span class="o">))</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">AssertionError</span><span class="o">(</span><span class="s">"Call wasn't in-flight!"</span><span class="o">);</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">promoteCalls</span><span class="o">)</span> <span class="n">promoteCalls</span><span class="o">();</span>
+      <span class="n">runningCallsCount</span> <span class="o">=</span> <span class="n">runningCallsCount</span><span class="o">();</span>
+      <span class="n">idleCallback</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">idleCallback</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">runningCallsCount</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">idleCallback</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">idleCallback</span><span class="o">.</span><span class="na">run</span><span class="o">();</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>发现在请求执行结束后，不管成功与否，都会调用<code class="highlighter-rouge">dispatcher.finished</code>方法，通知分发器相关任务已结束。当时异步调用的时候，会进行  <code class="highlighter-rouge">promoteCalls()</code>判断。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">promoteCalls</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">runningAsyncCalls</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;=</span> <span class="n">maxRequests</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span> <span class="c1">// Already running max capacity.</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">readyAsyncCalls</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="k">return</span><span class="o">;</span> <span class="c1">// No ready calls to promote.</span>
+
+    <span class="k">for</span> <span class="o">(</span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">AsyncCall</span><span class="o">&gt;</span> <span class="n">i</span> <span class="o">=</span> <span class="n">readyAsyncCalls</span><span class="o">.</span><span class="na">iterator</span><span class="o">();</span> <span class="n">i</span><span class="o">.</span><span class="na">hasNext</span><span class="o">();</span> <span class="o">)</span> <span class="o">{</span>
+      <span class="n">AsyncCall</span> <span class="n">call</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="na">next</span><span class="o">();</span>
+
+      <span class="k">if</span> <span class="o">(</span><span class="n">runningCallsForHost</span><span class="o">(</span><span class="n">call</span><span class="o">)</span> <span class="o">&lt;</span> <span class="n">maxRequestsPerHost</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">i</span><span class="o">.</span><span class="na">remove</span><span class="o">();</span>
+        <span class="n">runningAsyncCalls</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">call</span><span class="o">);</span>
+        <span class="n">executorService</span><span class="o">().</span><span class="na">execute</span><span class="o">(</span><span class="n">call</span><span class="o">);</span>
+      <span class="o">}</span>
+
+      <span class="k">if</span> <span class="o">(</span><span class="n">runningAsyncCalls</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;=</span> <span class="n">maxRequests</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span> <span class="c1">// Reached max capacity.</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>源码中注释写得已经明了，判断当前正在执行的异步任务数小于最大任务<code class="highlighter-rouge">64</code>和等待队列不为空的情况下，将等待中的队列任务拿出来依次加入执行队列，并加入执行线程池，直到满足之前的执行队列最大数小于<code class="highlighter-rouge">64</code>，和单一host的请求小于阈值<code class="highlighter-rouge">5</code>这两个条件。</p>
+
+<p>返回<code class="highlighter-rouge">finished</code>这个方法，在判断完<code class="highlighter-rouge">promoteCalls()</code>后，会检查正在<code class="highlighter-rouge">runningCallsCount</code>，从代码可以看出，只是计算了正在执行的同步和异步队列的总和。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kd">public</span> <span class="kd">synchronized</span> <span class="kt">int</span> <span class="nf">runningCallsCount</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="n">runningAsyncCalls</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">+</span> <span class="n">runningSyncCalls</span><span class="o">.</span><span class="na">size</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>这样就能知道整个线程池是不是处于空闲的状态，假如是空闲的状态，即没有当前任务和等待的任务，就会调动<code class="highlighter-rouge">idleCallback</code>，执行空闲通知回调线程。至于这个空闲回调的实现，是<code class="highlighter-rouge">okhttpclient</code>给我们自己预留的，当然，在<code class="highlighter-rouge">okhttpclient</code>初始化的时候，<code class="highlighter-rouge">builder</code>有个参数设置（见以下下代码），只是我们一般用不到自定义<code class="highlighter-rouge">dispatcher</code>的参数而已。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//okhttpClient.java   </span>
+<span class="kd">public</span> <span class="n">Builder</span> <span class="nf">dispatcher</span><span class="o">(</span><span class="n">Dispatcher</span> <span class="n">dispatcher</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">dispatcher</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalArgumentException</span><span class="o">(</span><span class="s">"dispatcher == null"</span><span class="o">);</span>
+      <span class="k">this</span><span class="o">.</span><span class="na">dispatcher</span> <span class="o">=</span> <span class="n">dispatcher</span><span class="o">;</span>
+      <span class="k">return</span> <span class="k">this</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>着这个地方就能自定义<code class="highlighter-rouge">dispatcher</code>了，所以我们没有在初始化<code class="highlighter-rouge">OkhttpClient</code>的时候，传入<code class="highlighter-rouge">dispatcher</code>，是不会有这个回调的，自定义例如：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Dispatcher</span> <span class="n">dispatcher</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Dispatcher</span><span class="o">();</span>
+<span class="n">dispatcher</span><span class="o">.</span><span class="na">setMaxRequests</span><span class="o">(</span><span class="mi">666</span><span class="o">);</span>
+<span class="c1">//设置空闲时回调。</span>
+<span class="n">dispatcher</span><span class="o">.</span><span class="na">setIdleCallback</span><span class="o">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="o">()</span> <span class="o">{</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+        <span class="c1">//todo  执行我们自己的空闲回调逻辑</span>
+    <span class="o">}</span>
+<span class="o">});</span>
+ <span class="n">OkHttpClient</span> <span class="n">client</span> <span class="o">=</span> <span class="k">new</span> <span class="n">OkHttpClient</span>
+          <span class="o">.</span><span class="na">Builder</span><span class="o">()</span>
+          <span class="o">.</span><span class="na">dispatcher</span><span class="o">(</span><span class="n">dispatcher</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+</code></pre></div></div>
+
+<p>至此，<code class="highlighter-rouge">dispatcher</code>的分析大概完成了，总结就是内部维护了三个队列（一个异步执行队列，一个异步等待队列，一个同步执行队列），和一个线程池。实现了高并发，低阻塞的运行，同时配合<code class="highlighter-rouge">finished</code>这个方法，实现了良好的任务调度。</p>
+
+<h3 id="链式拦截器">链式拦截器</h3>
+
+<p>通过<code class="highlighter-rouge">dispatcher</code>的调度后，最终都会通过<code class="highlighter-rouge">interceptor</code>，进行请求的拦截器处理。</p>
+
+<p><img src="/img/okhttp/interceptorsCore.png" alt="" /></p>
+
+<blockquote>
+  <p>图为官网okhttp core交互图。</p>
+</blockquote>
+
+<p>不管是同步任务还是异步任务，最终都会进入<strong>getResponseWithInterceptorChain()</strong>，通过这个方法中获取网络交互的结果。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//RealCall.java</span>
+<span class="n">Response</span> <span class="nf">getResponseWithInterceptorChain</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+    <span class="c1">// Build a full stack of interceptors.</span>
+    <span class="n">List</span><span class="o">&lt;</span><span class="n">Interceptor</span><span class="o">&gt;</span> <span class="n">interceptors</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;();</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">client</span><span class="o">.</span><span class="na">interceptors</span><span class="o">());</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">retryAndFollowUpInterceptor</span><span class="o">);</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">BridgeInterceptor</span><span class="o">(</span><span class="n">client</span><span class="o">.</span><span class="na">cookieJar</span><span class="o">()));</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">CacheInterceptor</span><span class="o">(</span><span class="n">client</span><span class="o">.</span><span class="na">internalCache</span><span class="o">()));</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">ConnectInterceptor</span><span class="o">(</span><span class="n">client</span><span class="o">));</span>
+    <span class="k">if</span> <span class="o">(!</span><span class="n">forWebSocket</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">interceptors</span><span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">client</span><span class="o">.</span><span class="na">networkInterceptors</span><span class="o">());</span>
+    <span class="o">}</span>
+    <span class="n">interceptors</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">CallServerInterceptor</span><span class="o">(</span><span class="n">forWebSocket</span><span class="o">));</span>
+
+    <span class="n">Interceptor</span><span class="o">.</span><span class="na">Chain</span> <span class="n">chain</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RealInterceptorChain</span><span class="o">(</span>
+        <span class="n">interceptors</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">originalRequest</span><span class="o">);</span>
+    <span class="c1">//</span>
+    <span class="k">return</span> <span class="n">chain</span><span class="o">.</span><span class="na">proceed</span><span class="o">(</span><span class="n">originalRequest</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">core</code>分为有五个拦截器，外加用户自定义的拦截器，汇总成一个拦截器集合，最终都会通过一系列的链式调用，返回Response给最终的Response。详细来说就是用过当前<code class="highlighter-rouge">interceptor</code>，指向下一个。返回结果。见代码<code class="highlighter-rouge">RealInterceptorChain</code>类的关键代码<code class="highlighter-rouge">processed</code>方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="n">Response</span> <span class="nf">proceed</span><span class="o">(</span><span class="n">Request</span> <span class="n">request</span><span class="o">,</span> <span class="n">StreamAllocation</span> <span class="n">streamAllocation</span><span class="o">,</span> <span class="n">HttpCodec</span> <span class="n">httpCodec</span><span class="o">,</span>
+      <span class="n">RealConnection</span> <span class="n">connection</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">index</span> <span class="o">&gt;=</span> <span class="n">interceptors</span><span class="o">.</span><span class="na">size</span><span class="o">())</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">AssertionError</span><span class="o">();</span>
+    <span class="n">calls</span><span class="o">++;</span>
+    <span class="c1">// If we already have a stream, confirm that the incoming request will use it.</span>
+    <span class="k">if</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">httpCodec</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="k">this</span><span class="o">.</span><span class="na">connection</span><span class="o">.</span><span class="na">supportsUrl</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">url</span><span class="o">()))</span> <span class="o">{</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"network interceptor "</span> <span class="o">+</span> <span class="n">interceptors</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">index</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span>
+          <span class="o">+</span> <span class="s">" must retain the same host and port"</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="c1">// If we already have a stream, confirm that this is the only call to chain.proceed().</span>
+    <span class="k">if</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">httpCodec</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">calls</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"network interceptor "</span> <span class="o">+</span> <span class="n">interceptors</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">index</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span>
+          <span class="o">+</span> <span class="s">" must call proceed() exactly once"</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="c1">// 调用下一个拦截器的方法。注意index+1</span>
+    <span class="n">RealInterceptorChain</span> <span class="n">next</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RealInterceptorChain</span><span class="o">(</span>
+        <span class="n">interceptors</span><span class="o">,</span> <span class="n">streamAllocation</span><span class="o">,</span> <span class="n">httpCodec</span><span class="o">,</span> <span class="n">connection</span><span class="o">,</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="o">,</span> <span class="n">request</span><span class="o">);</span>
+    <span class="n">Interceptor</span> <span class="n">interceptor</span> <span class="o">=</span> <span class="n">interceptors</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">index</span><span class="o">);</span>
+    <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">interceptor</span><span class="o">.</span><span class="na">intercept</span><span class="o">(</span><span class="n">next</span><span class="o">);</span>
+    <span class="c1">// Confirm that the next interceptor made its required call to chain.proceed().</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">httpCodec</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">interceptors</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="n">next</span><span class="o">.</span><span class="na">calls</span> <span class="o">!=</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"network interceptor "</span> <span class="o">+</span> <span class="n">interceptor</span>
+          <span class="o">+</span> <span class="s">" must call proceed() exactly once"</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="c1">// Confirm that the intercepted response isn't null.</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">response</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">NullPointerException</span><span class="o">(</span><span class="s">"interceptor "</span> <span class="o">+</span> <span class="n">interceptor</span> <span class="o">+</span> <span class="s">" returned null"</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">response</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>从上面代码可以看出，除去<code class="highlighter-rouge">if</code>判断的代码之后，关键就在注释的地方，调用的是下一个拦截器。最终得到<code class="highlighter-rouge">Response</code>结果。整体流程如下图：</p>
+
+<p><img src="/img/okhttp/okhttp_interceptor.png" alt="okhttp_interceptor" /></p>
+
+<p>下面分来来看看这五个拦截器。</p>
+
+<h4 id="retryandfollowupinterceptor">RetryAndFollowUpInterceptor</h4>
+
+<p><code class="highlighter-rouge">RetryAndFollowUpInterceptor</code>是<code class="highlighter-rouge">okhttp</code>内部维护的第一个拦截器，关键代码在<code class="highlighter-rouge">intercept</code>方法中:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//RetryAndFollowUpInterceptor</span>
+<span class="nd">@Override</span>
+<span class="kd">public</span> <span class="n">Response</span> <span class="nf">intercept</span><span class="o">(</span><span class="n">Chain</span> <span class="n">chain</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+    <span class="n">Request</span> <span class="n">request</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="na">request</span><span class="o">();</span>
+    <span class="n">streamAllocation</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StreamAllocation</span><span class="o">(</span>
+        <span class="n">client</span><span class="o">.</span><span class="na">connectionPool</span><span class="o">(),</span> <span class="n">createAddress</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">url</span><span class="o">()),</span> <span class="n">callStackTrace</span><span class="o">);</span>
+    <span class="kt">int</span> <span class="n">followUpCount</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="n">Response</span> <span class="n">priorResponse</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">canceled</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">streamAllocation</span><span class="o">.</span><span class="na">release</span><span class="o">();</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">IOException</span><span class="o">(</span><span class="s">"Canceled"</span><span class="o">);</span>
+      <span class="o">}</span>
+      <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+      <span class="kt">boolean</span> <span class="n">releaseConnection</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+      <span class="k">try</span> <span class="o">{</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="o">((</span><span class="n">RealInterceptorChain</span><span class="o">)</span> <span class="n">chain</span><span class="o">).</span><span class="na">proceed</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">streamAllocation</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+        <span class="n">releaseConnection</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">RouteException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// The attempt to connect via a route failed. The request will not have been sent.</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">recover</span><span class="o">(</span><span class="n">e</span><span class="o">.</span><span class="na">getLastConnectException</span><span class="o">(),</span> <span class="kc">false</span><span class="o">,</span> <span class="n">request</span><span class="o">))</span> <span class="o">{</span>
+          <span class="k">throw</span> <span class="n">e</span><span class="o">.</span><span class="na">getLastConnectException</span><span class="o">();</span>
+        <span class="o">}</span>
+        <span class="n">releaseConnection</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="k">continue</span><span class="o">;</span>
+      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// An attempt to communicate with a server failed. The request may have been sent.</span>
+        <span class="kt">boolean</span> <span class="n">requestSendStarted</span> <span class="o">=</span> <span class="o">!(</span><span class="n">e</span> <span class="k">instanceof</span> <span class="n">ConnectionShutdownException</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">recover</span><span class="o">(</span><span class="n">e</span><span class="o">,</span> <span class="n">requestSendStarted</span><span class="o">,</span> <span class="n">request</span><span class="o">))</span> <span class="k">throw</span> <span class="n">e</span><span class="o">;</span>
+        <span class="n">releaseConnection</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="k">continue</span><span class="o">;</span>
+      <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+        <span class="c1">// We're throwing an unchecked exception. Release any resources.</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">releaseConnection</span><span class="o">)</span> <span class="o">{</span>
+          <span class="n">streamAllocation</span><span class="o">.</span><span class="na">streamFailed</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+          <span class="n">streamAllocation</span><span class="o">.</span><span class="na">release</span><span class="o">();</span>
+        <span class="o">}</span>
+      <span class="o">}</span>
+      <span class="c1">// Attach the prior response if it exists. Such responses never have a body.</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">priorResponse</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+            <span class="o">.</span><span class="na">priorResponse</span><span class="o">(</span><span class="n">priorResponse</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+                    <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="kc">null</span><span class="o">)</span>
+                    <span class="o">.</span><span class="na">build</span><span class="o">())</span>
+            <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+      <span class="o">}</span>
+      <span class="n">Request</span> <span class="n">followUp</span> <span class="o">=</span> <span class="n">followUpRequest</span><span class="o">(</span><span class="n">response</span><span class="o">);</span>
+
+      <span class="k">if</span> <span class="o">(</span><span class="n">followUp</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">forWebSocket</span><span class="o">)</span> <span class="o">{</span>
+          <span class="n">streamAllocation</span><span class="o">.</span><span class="na">release</span><span class="o">();</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">;</span>
+      <span class="o">}</span>
+      <span class="n">closeQuietly</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">body</span><span class="o">());</span>
+      <span class="k">if</span> <span class="o">(++</span><span class="n">followUpCount</span> <span class="o">&gt;</span> <span class="n">MAX_FOLLOW_UPS</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">streamAllocation</span><span class="o">.</span><span class="na">release</span><span class="o">();</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">ProtocolException</span><span class="o">(</span><span class="s">"Too many follow-up requests: "</span> <span class="o">+</span> <span class="n">followUpCount</span><span class="o">);</span>
+      <span class="o">}</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">followUp</span><span class="o">.</span><span class="na">body</span><span class="o">()</span> <span class="k">instanceof</span> <span class="n">UnrepeatableRequestBody</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">streamAllocation</span><span class="o">.</span><span class="na">release</span><span class="o">();</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">HttpRetryException</span><span class="o">(</span><span class="s">"Cannot retry streamed HTTP body"</span><span class="o">,</span> <span class="n">response</span><span class="o">.</span><span class="na">code</span><span class="o">());</span>
+      <span class="o">}</span>
+      <span class="k">if</span> <span class="o">(!</span><span class="n">sameConnection</span><span class="o">(</span><span class="n">response</span><span class="o">,</span> <span class="n">followUp</span><span class="o">.</span><span class="na">url</span><span class="o">()))</span> <span class="o">{</span>
+        <span class="n">streamAllocation</span><span class="o">.</span><span class="na">release</span><span class="o">();</span>
+        <span class="n">streamAllocation</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StreamAllocation</span><span class="o">(</span>
+            <span class="n">client</span><span class="o">.</span><span class="na">connectionPool</span><span class="o">(),</span> <span class="n">createAddress</span><span class="o">(</span><span class="n">followUp</span><span class="o">.</span><span class="na">url</span><span class="o">()),</span> <span class="n">callStackTrace</span><span class="o">);</span>
+      <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">streamAllocation</span><span class="o">.</span><span class="na">codec</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"Closing the body of "</span> <span class="o">+</span> <span class="n">response</span>
+            <span class="o">+</span> <span class="s">" didn't close its backing stream. Bad interceptor?"</span><span class="o">);</span>
+      <span class="o">}</span>
+      <span class="n">request</span> <span class="o">=</span> <span class="n">followUp</span><span class="o">;</span>
+      <span class="n">priorResponse</span> <span class="o">=</span> <span class="n">response</span><span class="o">;</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>根据上面的代码，发现，创建了一个<code class="highlighter-rouge">StreamAllocation</code>对象，这个对象最要负责创建连接 。维护内部维护了一个连接池，用于判断网络请求失败后的重试，以及在可用的情况下复用当前的连接。</p>
+
+<h4 id="bridgeinterceptor">BridgeInterceptor</h4>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@Override</span> <span class="kd">public</span> <span class="n">Response</span> <span class="nf">intercept</span><span class="o">(</span><span class="n">Chain</span> <span class="n">chain</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+    <span class="n">Request</span> <span class="n">userRequest</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="na">request</span><span class="o">();</span>
+    <span class="n">Request</span><span class="o">.</span><span class="na">Builder</span> <span class="n">requestBuilder</span> <span class="o">=</span> <span class="n">userRequest</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">();</span>
+
+    <span class="n">RequestBody</span> <span class="n">body</span> <span class="o">=</span> <span class="n">userRequest</span><span class="o">.</span><span class="na">body</span><span class="o">();</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">body</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">MediaType</span> <span class="n">contentType</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="na">contentType</span><span class="o">();</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">contentType</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">requestBuilder</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Content-Type"</span><span class="o">,</span> <span class="n">contentType</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+      <span class="o">}</span>
+
+      <span class="kt">long</span> <span class="n">contentLength</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="na">contentLength</span><span class="o">();</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">contentLength</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">requestBuilder</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Content-Length"</span><span class="o">,</span> <span class="n">Long</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">contentLength</span><span class="o">));</span>
+        <span class="n">requestBuilder</span><span class="o">.</span><span class="na">removeHeader</span><span class="o">(</span><span class="s">"Transfer-Encoding"</span><span class="o">);</span>
+      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+        <span class="n">requestBuilder</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Transfer-Encoding"</span><span class="o">,</span> <span class="s">"chunked"</span><span class="o">);</span>
+        <span class="n">requestBuilder</span><span class="o">.</span><span class="na">removeHeader</span><span class="o">(</span><span class="s">"Content-Length"</span><span class="o">);</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">userRequest</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Host"</span><span class="o">)</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">requestBuilder</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Host"</span><span class="o">,</span> <span class="n">hostHeader</span><span class="o">(</span><span class="n">userRequest</span><span class="o">.</span><span class="na">url</span><span class="o">(),</span> <span class="kc">false</span><span class="o">));</span>
+    <span class="o">}</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">userRequest</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Connection"</span><span class="o">)</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">requestBuilder</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Connection"</span><span class="o">,</span> <span class="s">"Keep-Alive"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="c1">// If we add an "Accept-Encoding: gzip" header field we're responsible for also decompressing</span>
+    <span class="c1">// the transfer stream.</span>
+    <span class="kt">boolean</span> <span class="n">transparentGzip</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">userRequest</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Accept-Encoding"</span><span class="o">)</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">userRequest</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Range"</span><span class="o">)</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">transparentGzip</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+      <span class="n">requestBuilder</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Accept-Encoding"</span><span class="o">,</span> <span class="s">"gzip"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="n">List</span><span class="o">&lt;</span><span class="n">Cookie</span><span class="o">&gt;</span> <span class="n">cookies</span> <span class="o">=</span> <span class="n">cookieJar</span><span class="o">.</span><span class="na">loadForRequest</span><span class="o">(</span><span class="n">userRequest</span><span class="o">.</span><span class="na">url</span><span class="o">());</span>
+    <span class="k">if</span> <span class="o">(!</span><span class="n">cookies</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+      <span class="n">requestBuilder</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Cookie"</span><span class="o">,</span> <span class="n">cookieHeader</span><span class="o">(</span><span class="n">cookies</span><span class="o">));</span>
+    <span class="o">}</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">userRequest</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"User-Agent"</span><span class="o">)</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">requestBuilder</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"User-Agent"</span><span class="o">,</span> <span class="n">Version</span><span class="o">.</span><span class="na">userAgent</span><span class="o">());</span>
+    <span class="o">}</span>
+
+    <span class="n">Response</span> <span class="n">networkResponse</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="na">proceed</span><span class="o">(</span><span class="n">requestBuilder</span><span class="o">.</span><span class="na">build</span><span class="o">());</span>
+
+    <span class="n">HttpHeaders</span><span class="o">.</span><span class="na">receiveHeaders</span><span class="o">(</span><span class="n">cookieJar</span><span class="o">,</span> <span class="n">userRequest</span><span class="o">.</span><span class="na">url</span><span class="o">(),</span> <span class="n">networkResponse</span><span class="o">.</span><span class="na">headers</span><span class="o">());</span>
+
+    <span class="n">Response</span><span class="o">.</span><span class="na">Builder</span> <span class="n">responseBuilder</span> <span class="o">=</span> <span class="n">networkResponse</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">request</span><span class="o">(</span><span class="n">userRequest</span><span class="o">);</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">transparentGzip</span>
+        <span class="o">&amp;&amp;</span> <span class="s">"gzip"</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">networkResponse</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Content-Encoding"</span><span class="o">))</span>
+        <span class="o">&amp;&amp;</span> <span class="n">HttpHeaders</span><span class="o">.</span><span class="na">hasBody</span><span class="o">(</span><span class="n">networkResponse</span><span class="o">))</span> <span class="o">{</span>
+      <span class="n">GzipSource</span> <span class="n">responseBody</span> <span class="o">=</span> <span class="k">new</span> <span class="n">GzipSource</span><span class="o">(</span><span class="n">networkResponse</span><span class="o">.</span><span class="na">body</span><span class="o">().</span><span class="na">source</span><span class="o">());</span>
+      <span class="n">Headers</span> <span class="n">strippedHeaders</span> <span class="o">=</span> <span class="n">networkResponse</span><span class="o">.</span><span class="na">headers</span><span class="o">().</span><span class="na">newBuilder</span><span class="o">()</span>
+          <span class="o">.</span><span class="na">removeAll</span><span class="o">(</span><span class="s">"Content-Encoding"</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">removeAll</span><span class="o">(</span><span class="s">"Content-Length"</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+      <span class="n">responseBuilder</span><span class="o">.</span><span class="na">headers</span><span class="o">(</span><span class="n">strippedHeaders</span><span class="o">);</span>
+      <span class="n">responseBuilder</span><span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="k">new</span> <span class="n">RealResponseBody</span><span class="o">(</span><span class="n">strippedHeaders</span><span class="o">,</span> <span class="n">Okio</span><span class="o">.</span><span class="na">buffer</span><span class="o">(</span><span class="n">responseBody</span><span class="o">)));</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="n">responseBuilder</span><span class="o">.</span><span class="na">build</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>根据以上代码，发现 这个拦截器，主要负责对<code class="highlighter-rouge">Requset</code>进行一些请求头的添加，比如<code class="highlighter-rouge">Content-Type</code>，<code class="highlighter-rouge">User-Agent</code>，<code class="highlighter-rouge">Keep-Alive</code>等，Keep-Alive是保持连接，这个也是复用连接必须的，同时，还有一些cookie，编码内容等作用。</p>
+
+<h4 id="cacheinterceptor">CacheInterceptor</h4>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nd">@Override</span> <span class="kd">public</span> <span class="n">Response</span> <span class="nf">intercept</span><span class="o">(</span><span class="n">Chain</span> <span class="n">chain</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+    <span class="n">Response</span> <span class="n">cacheCandidate</span> <span class="o">=</span> <span class="n">cache</span> <span class="o">!=</span> <span class="kc">null</span>
+        <span class="o">?</span> <span class="n">cache</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">chain</span><span class="o">.</span><span class="na">request</span><span class="o">())</span>
+        <span class="o">:</span> <span class="kc">null</span><span class="o">;</span>
+
+    <span class="kt">long</span> <span class="n">now</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+
+    <span class="n">CacheStrategy</span> <span class="n">strategy</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CacheStrategy</span><span class="o">.</span><span class="na">Factory</span><span class="o">(</span><span class="n">now</span><span class="o">,</span> <span class="n">chain</span><span class="o">.</span><span class="na">request</span><span class="o">(),</span> <span class="n">cacheCandidate</span><span class="o">).</span><span class="na">get</span><span class="o">();</span>
+    <span class="n">Request</span> <span class="n">networkRequest</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="na">networkRequest</span><span class="o">;</span>
+    <span class="n">Response</span> <span class="n">cacheResponse</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="na">cacheResponse</span><span class="o">;</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">cache</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">cache</span><span class="o">.</span><span class="na">trackResponse</span><span class="o">(</span><span class="n">strategy</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">cacheCandidate</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">cacheResponse</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">closeQuietly</span><span class="o">(</span><span class="n">cacheCandidate</span><span class="o">.</span><span class="na">body</span><span class="o">());</span> <span class="c1">// The cache candidate wasn't applicable. Close it.</span>
+    <span class="o">}</span>
+
+    <span class="c1">// If we're forbidden from using the network and the cache is insufficient, fail.</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">networkRequest</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">cacheResponse</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="k">new</span> <span class="n">Response</span><span class="o">.</span><span class="na">Builder</span><span class="o">()</span>
+          <span class="o">.</span><span class="na">request</span><span class="o">(</span><span class="n">chain</span><span class="o">.</span><span class="na">request</span><span class="o">())</span>
+          <span class="o">.</span><span class="na">protocol</span><span class="o">(</span><span class="n">Protocol</span><span class="o">.</span><span class="na">HTTP_1_1</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">code</span><span class="o">(</span><span class="mi">504</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">message</span><span class="o">(</span><span class="s">"Unsatisfiable Request (only-if-cached)"</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="n">Util</span><span class="o">.</span><span class="na">EMPTY_RESPONSE</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">sentRequestAtMillis</span><span class="o">(-</span><span class="mi">1L</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">receivedResponseAtMillis</span><span class="o">(</span><span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">())</span>
+          <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="c1">// If we don't need the network, we're done.</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">networkRequest</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">cacheResponse</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+          <span class="o">.</span><span class="na">cacheResponse</span><span class="o">(</span><span class="n">stripBody</span><span class="o">(</span><span class="n">cacheResponse</span><span class="o">))</span>
+          <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="n">Response</span> <span class="n">networkResponse</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="k">try</span> <span class="o">{</span>
+      <span class="n">networkResponse</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="na">proceed</span><span class="o">(</span><span class="n">networkRequest</span><span class="o">);</span>
+    <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+      <span class="c1">// If we're crashing on I/O or otherwise, don't leak the cache body.</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">networkResponse</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">cacheCandidate</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">closeQuietly</span><span class="o">(</span><span class="n">cacheCandidate</span><span class="o">.</span><span class="na">body</span><span class="o">());</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="c1">// If we have a cache response too, then we're doing a conditional get.</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">cacheResponse</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">networkResponse</span><span class="o">.</span><span class="na">code</span><span class="o">()</span> <span class="o">==</span> <span class="n">HTTP_NOT_MODIFIED</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">cacheResponse</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+            <span class="o">.</span><span class="na">headers</span><span class="o">(</span><span class="n">combine</span><span class="o">(</span><span class="n">cacheResponse</span><span class="o">.</span><span class="na">headers</span><span class="o">(),</span> <span class="n">networkResponse</span><span class="o">.</span><span class="na">headers</span><span class="o">()))</span>
+            <span class="o">.</span><span class="na">sentRequestAtMillis</span><span class="o">(</span><span class="n">networkResponse</span><span class="o">.</span><span class="na">sentRequestAtMillis</span><span class="o">())</span>
+            <span class="o">.</span><span class="na">receivedResponseAtMillis</span><span class="o">(</span><span class="n">networkResponse</span><span class="o">.</span><span class="na">receivedResponseAtMillis</span><span class="o">())</span>
+            <span class="o">.</span><span class="na">cacheResponse</span><span class="o">(</span><span class="n">stripBody</span><span class="o">(</span><span class="n">cacheResponse</span><span class="o">))</span>
+            <span class="o">.</span><span class="na">networkResponse</span><span class="o">(</span><span class="n">stripBody</span><span class="o">(</span><span class="n">networkResponse</span><span class="o">))</span>
+            <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+        <span class="n">networkResponse</span><span class="o">.</span><span class="na">body</span><span class="o">().</span><span class="na">close</span><span class="o">();</span>
+
+        <span class="c1">// Update the cache after combining headers but before stripping the</span>
+        <span class="c1">// Content-Encoding header (as performed by initContentStream()).</span>
+        <span class="n">cache</span><span class="o">.</span><span class="na">trackConditionalCacheHit</span><span class="o">();</span>
+        <span class="n">cache</span><span class="o">.</span><span class="na">update</span><span class="o">(</span><span class="n">cacheResponse</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">;</span>
+      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+        <span class="n">closeQuietly</span><span class="o">(</span><span class="n">cacheResponse</span><span class="o">.</span><span class="na">body</span><span class="o">());</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">networkResponse</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">cacheResponse</span><span class="o">(</span><span class="n">stripBody</span><span class="o">(</span><span class="n">cacheResponse</span><span class="o">))</span>
+        <span class="o">.</span><span class="na">networkResponse</span><span class="o">(</span><span class="n">stripBody</span><span class="o">(</span><span class="n">networkResponse</span><span class="o">))</span>
+        <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">cache</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">HttpHeaders</span><span class="o">.</span><span class="na">hasBody</span><span class="o">(</span><span class="n">response</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">CacheStrategy</span><span class="o">.</span><span class="na">isCacheable</span><span class="o">(</span><span class="n">response</span><span class="o">,</span> <span class="n">networkRequest</span><span class="o">))</span> <span class="o">{</span>
+        <span class="c1">// Offer this request to the cache.</span>
+        <span class="n">CacheRequest</span> <span class="n">cacheRequest</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">response</span><span class="o">);</span>
+        <span class="k">return</span> <span class="nf">cacheWritingResponse</span><span class="o">(</span><span class="n">cacheRequest</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+      <span class="o">}</span>
+
+      <span class="k">if</span> <span class="o">(</span><span class="n">HttpMethod</span><span class="o">.</span><span class="na">invalidatesCache</span><span class="o">(</span><span class="n">networkRequest</span><span class="o">.</span><span class="na">method</span><span class="o">()))</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+          <span class="n">cache</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">networkRequest</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">ignored</span><span class="o">)</span> <span class="o">{</span>
+          <span class="c1">// The cache cannot be written.</span>
+        <span class="o">}</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="n">response</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>根据名称可以看出，此拦截器主要负责缓存的处理，判断后，假如有符合要求的缓存就将其返回，另外更新当前的缓存，以及假如缓存失效了，就删掉此次缓存。另外上面有缓存策略是如何进行的，后面再看。记住这几行代码，就是获取缓存的：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">Response</span> <span class="n">cacheCandidate</span> <span class="o">=</span> <span class="n">cache</span> <span class="o">!=</span> <span class="kc">null</span>
+        <span class="o">?</span> <span class="n">cache</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">chain</span><span class="o">.</span><span class="na">request</span><span class="o">())</span>
+        <span class="o">:</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="kt">long</span> <span class="n">now</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+    <span class="n">CacheStrategy</span> <span class="n">strategy</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CacheStrategy</span><span class="o">.</span><span class="na">Factory</span><span class="o">(</span><span class="n">now</span><span class="o">,</span> <span class="n">chain</span><span class="o">.</span><span class="na">request</span><span class="o">(),</span> <span class="n">cacheCandidate</span><span class="o">).</span><span class="na">get</span><span class="o">();</span>
+    <span class="n">Request</span> <span class="n">networkRequest</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="na">networkRequest</span><span class="o">;</span>
+    <span class="n">Response</span> <span class="n">cacheResponse</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="na">cacheResponse</span><span class="o">;</span>
+</code></pre></div></div>
+
+<h4 id="connectinterceptor">ConnectInterceptor</h4>
+
+<p><code class="highlighter-rouge">ConnectInterceptor</code>的代码较少，但是关键在于<code class="highlighter-rouge">StreamAllocation</code>。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span> <span class="kd">public</span> <span class="n">Response</span> <span class="nf">intercept</span><span class="o">(</span><span class="n">Chain</span> <span class="n">chain</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+    <span class="n">RealInterceptorChain</span> <span class="n">realChain</span> <span class="o">=</span> <span class="o">(</span><span class="n">RealInterceptorChain</span><span class="o">)</span> <span class="n">chain</span><span class="o">;</span>
+    <span class="n">Request</span> <span class="n">request</span> <span class="o">=</span> <span class="n">realChain</span><span class="o">.</span><span class="na">request</span><span class="o">();</span>
+    <span class="n">StreamAllocation</span> <span class="n">streamAllocation</span> <span class="o">=</span> <span class="n">realChain</span><span class="o">.</span><span class="na">streamAllocation</span><span class="o">();</span>
+
+    <span class="c1">// We need the network to satisfy this request. Possibly for validating a conditional GET.</span>
+    <span class="kt">boolean</span> <span class="n">doExtensiveHealthChecks</span> <span class="o">=</span> <span class="o">!</span><span class="n">request</span><span class="o">.</span><span class="na">method</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="s">"GET"</span><span class="o">);</span>
+    <span class="n">HttpCodec</span> <span class="n">httpCodec</span> <span class="o">=</span> <span class="n">streamAllocation</span><span class="o">.</span><span class="na">newStream</span><span class="o">(</span><span class="n">client</span><span class="o">,</span> <span class="n">doExtensiveHealthChecks</span><span class="o">);</span>
+    <span class="n">RealConnection</span> <span class="n">connection</span> <span class="o">=</span> <span class="n">streamAllocation</span><span class="o">.</span><span class="na">connection</span><span class="o">();</span>
+
+    <span class="k">return</span> <span class="n">realChain</span><span class="o">.</span><span class="na">proceed</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">streamAllocation</span><span class="o">,</span> <span class="n">httpCodec</span><span class="o">,</span> <span class="n">connection</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">StreamAllocation</code>上面说根据是不是<code class="highlighter-rouge">GET</code>请求，有一个判断，跟代码看一下：<code class="highlighter-rouge">streamAllocation.newStream(client, doExtensiveHealthChecks)</code></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// StreamAllocation.java</span>
+<span class="kd">public</span> <span class="n">HttpCodec</span> <span class="nf">newStream</span><span class="o">(</span><span class="n">OkHttpClient</span> <span class="n">client</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">doExtensiveHealthChecks</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">connectTimeout</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">connectTimeoutMillis</span><span class="o">();</span>
+    <span class="kt">int</span> <span class="n">readTimeout</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">readTimeoutMillis</span><span class="o">();</span>
+    <span class="kt">int</span> <span class="n">writeTimeout</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">writeTimeoutMillis</span><span class="o">();</span>
+    <span class="kt">boolean</span> <span class="n">connectionRetryEnabled</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">retryOnConnectionFailure</span><span class="o">();</span>
+
+    <span class="k">try</span> <span class="o">{</span>
+      <span class="n">RealConnection</span> <span class="n">resultConnection</span> <span class="o">=</span> <span class="n">findHealthyConnection</span><span class="o">(</span><span class="n">connectTimeout</span><span class="o">,</span> <span class="n">readTimeout</span><span class="o">,</span>
+          <span class="n">writeTimeout</span><span class="o">,</span> <span class="n">connectionRetryEnabled</span><span class="o">,</span> <span class="n">doExtensiveHealthChecks</span><span class="o">);</span>
+      <span class="n">HttpCodec</span> <span class="n">resultCodec</span> <span class="o">=</span> <span class="n">resultConnection</span><span class="o">.</span><span class="na">newCodec</span><span class="o">(</span><span class="n">client</span><span class="o">,</span> <span class="k">this</span><span class="o">);</span>
+
+      <span class="kd">synchronized</span> <span class="o">(</span><span class="n">connectionPool</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">codec</span> <span class="o">=</span> <span class="n">resultCodec</span><span class="o">;</span>
+        <span class="k">return</span> <span class="n">resultCodec</span><span class="o">;</span>
+      <span class="o">}</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">RouteException</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>这个地方会实例化一个<code class="highlighter-rouge">HttpCodec</code>对象，他是负责编码和解码对应的请求和响应的，同样会判断连接是否健康，需不需要重新建立连接等。</p>
+
+<h4 id="callserverinterceptor">CallServerInterceptor</h4>
+
+<p><code class="highlighter-rouge">CallServerInterceptor</code>才是真正负责和服务端交互的，也是拦截器的最后一个。主要是建立连接，通过<code class="highlighter-rouge">httpcode</code>发起请求，以及再接收到响应之后，读取响应码，判断，最终返回<code class="highlighter-rouge">Response</code>的对象。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span>
+<span class="kd">public</span> <span class="n">Response</span> <span class="nf">intercept</span><span class="o">(</span><span class="n">Chain</span> <span class="n">chain</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+    <span class="n">RealInterceptorChain</span> <span class="n">realChain</span> <span class="o">=</span> <span class="o">(</span><span class="n">RealInterceptorChain</span><span class="o">)</span> <span class="n">chain</span><span class="o">;</span>
+    <span class="n">HttpCodec</span> <span class="n">httpCodec</span> <span class="o">=</span> <span class="n">realChain</span><span class="o">.</span><span class="na">httpStream</span><span class="o">();</span>
+    <span class="n">StreamAllocation</span> <span class="n">streamAllocation</span> <span class="o">=</span> <span class="n">realChain</span><span class="o">.</span><span class="na">streamAllocation</span><span class="o">();</span>
+    <span class="n">RealConnection</span> <span class="n">connection</span> <span class="o">=</span> <span class="o">(</span><span class="n">RealConnection</span><span class="o">)</span> <span class="n">realChain</span><span class="o">.</span><span class="na">connection</span><span class="o">();</span>
+    <span class="n">Request</span> <span class="n">request</span> <span class="o">=</span> <span class="n">realChain</span><span class="o">.</span><span class="na">request</span><span class="o">();</span>
+
+    <span class="kt">long</span> <span class="n">sentRequestMillis</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+    <span class="n">httpCodec</span><span class="o">.</span><span class="na">writeRequestHeaders</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+
+    <span class="n">Response</span><span class="o">.</span><span class="na">Builder</span> <span class="n">responseBuilder</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">HttpMethod</span><span class="o">.</span><span class="na">permitsRequestBody</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">method</span><span class="o">())</span> <span class="o">&amp;&amp;</span> <span class="n">request</span><span class="o">.</span><span class="na">body</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="c1">// If there's a "Expect: 100-continue" header on the request, wait for a "HTTP/1.1 100</span>
+      <span class="c1">// Continue" response before transmitting the request body. If we don't get that, return what</span>
+      <span class="c1">// we did get (such as a 4xx response) without ever transmitting the request body.</span>
+      <span class="k">if</span> <span class="o">(</span><span class="s">"100-continue"</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Expect"</span><span class="o">)))</span> <span class="o">{</span>
+        <span class="n">httpCodec</span><span class="o">.</span><span class="na">flushRequest</span><span class="o">();</span>
+        <span class="n">responseBuilder</span> <span class="o">=</span> <span class="n">httpCodec</span><span class="o">.</span><span class="na">readResponseHeaders</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+      <span class="o">}</span>
+
+      <span class="k">if</span> <span class="o">(</span><span class="n">responseBuilder</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// Write the request body if the "Expect: 100-continue" expectation was met.</span>
+        <span class="n">Sink</span> <span class="n">requestBodyOut</span> <span class="o">=</span> <span class="n">httpCodec</span><span class="o">.</span><span class="na">createRequestBody</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">request</span><span class="o">.</span><span class="na">body</span><span class="o">().</span><span class="na">contentLength</span><span class="o">());</span>
+        <span class="n">BufferedSink</span> <span class="n">bufferedRequestBody</span> <span class="o">=</span> <span class="n">Okio</span><span class="o">.</span><span class="na">buffer</span><span class="o">(</span><span class="n">requestBodyOut</span><span class="o">);</span>
+        <span class="n">request</span><span class="o">.</span><span class="na">body</span><span class="o">().</span><span class="na">writeTo</span><span class="o">(</span><span class="n">bufferedRequestBody</span><span class="o">);</span>
+        <span class="n">bufferedRequestBody</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+      <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(!</span><span class="n">connection</span><span class="o">.</span><span class="na">isMultiplexed</span><span class="o">())</span> <span class="o">{</span>
+        <span class="c1">// If the "Expect: 100-continue" expectation wasn't met, prevent the HTTP/1 connection from</span>
+        <span class="c1">// being reused. Otherwise we're still obligated to transmit the request body to leave the</span>
+        <span class="c1">// connection in a consistent state.</span>
+        <span class="n">streamAllocation</span><span class="o">.</span><span class="na">noNewStreams</span><span class="o">();</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="n">httpCodec</span><span class="o">.</span><span class="na">finishRequest</span><span class="o">();</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">responseBuilder</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">responseBuilder</span> <span class="o">=</span> <span class="n">httpCodec</span><span class="o">.</span><span class="na">readResponseHeaders</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">responseBuilder</span>
+        <span class="o">.</span><span class="na">request</span><span class="o">(</span><span class="n">request</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">handshake</span><span class="o">(</span><span class="n">streamAllocation</span><span class="o">.</span><span class="na">connection</span><span class="o">().</span><span class="na">handshake</span><span class="o">())</span>
+        <span class="o">.</span><span class="na">sentRequestAtMillis</span><span class="o">(</span><span class="n">sentRequestMillis</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">receivedResponseAtMillis</span><span class="o">(</span><span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">())</span>
+        <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+    <span class="kt">int</span> <span class="n">code</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">code</span><span class="o">();</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">forWebSocket</span> <span class="o">&amp;&amp;</span> <span class="n">code</span> <span class="o">==</span> <span class="mi">101</span><span class="o">)</span> <span class="o">{</span>
+      <span class="c1">// Connection is upgrading, but we need to ensure interceptors see a non-null response body.</span>
+      <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+          <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="n">Util</span><span class="o">.</span><span class="na">EMPTY_RESPONSE</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+          <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="n">httpCodec</span><span class="o">.</span><span class="na">openResponseBody</span><span class="o">(</span><span class="n">response</span><span class="o">))</span>
+          <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="s">"close"</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">request</span><span class="o">().</span><span class="na">header</span><span class="o">(</span><span class="s">"Connection"</span><span class="o">))</span>
+        <span class="o">||</span> <span class="s">"close"</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">header</span><span class="o">(</span><span class="s">"Connection"</span><span class="o">)))</span> <span class="o">{</span>
+      <span class="n">streamAllocation</span><span class="o">.</span><span class="na">noNewStreams</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="k">if</span> <span class="o">((</span><span class="n">code</span> <span class="o">==</span> <span class="mi">204</span> <span class="o">||</span> <span class="n">code</span> <span class="o">==</span> <span class="mi">205</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">response</span><span class="o">.</span><span class="na">body</span><span class="o">().</span><span class="na">contentLength</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">ProtocolException</span><span class="o">(</span>
+          <span class="s">"HTTP "</span> <span class="o">+</span> <span class="n">code</span> <span class="o">+</span> <span class="s">" had non-zero Content-Length: "</span> <span class="o">+</span> <span class="n">response</span><span class="o">.</span><span class="na">body</span><span class="o">().</span><span class="na">contentLength</span><span class="o">());</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="n">response</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>其中<code class="highlighter-rouge">io</code>读写，是用<code class="highlighter-rouge">okio</code>包做的。</p>
+
+<h3 id="缓存策略">缓存策略</h3>
+
+<h3 id="连接池-connectionpool">连接池 ConnectionPool</h3>
+
+<h3 id="总结">总结</h3>
+
+
+                <hr style="visibility: hidden;">
+
+                
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2018/03/20/jekyll-travis-ci/" data-toggle="tooltip" data-placement="top" title="jekyll-travis-ci">
+                        Previous<br>
+                        <span>jekyll-travis-ci</span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/2018/06/01/Retrofit%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" data-toggle="tooltip" data-placement="top" title="Retrofit源码分析">
+                        Next<br>
+                        <span>Retrofit源码分析</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+
+
+                
+
+                
+
+            </div>  
+
+    <!-- Side Catalog Container -->
+        
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">目录</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+                				<a href="/tags/#博客" title="博客" rel="2">
+                                    博客
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Android" title="Android" rel="11">
+                                    Android
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+                				<a href="/tags/#笔记" title="笔记" rel="2">
+                                    笔记
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#网络请求" title="网络请求" rel="2">
+                                    网络请求
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#源码分析" title="源码分析" rel="2">
+                                    源码分析
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="https://changweiba.github.io/">常尾巴</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'always',
+          placement: 'right',
+          icon: '#'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    
+                    <li>
+                        <a href="https://twitter.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    <li>
+                        <a target="_blank" href="https://www.facebook.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Zhouhao Blog 2019
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> | Powered by <a
+                        href="http://jekyllrb.com/">jekyll</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+<!-- Service Worker -->
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/ 
+     - https://github.com/jneen/rouge/wiki/list-of-supported-languages-and-lexers   
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async('/js/jquery.tagcloud.js',function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-120305049-1';
+    var _gaDomain = 'auto';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
+
+
+
+
+
+<!-- Image to hack wechat -->
+<img src="/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>
