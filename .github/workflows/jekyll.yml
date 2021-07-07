@@ -20,5 +20,5 @@ jobs:
     # Specify the target branch (optional)
     - uses: helaili/jekyll-action@v2
       with:
-        token: ${{ ACCESS_TOKEN }}
+        token: ${{ secrets.ACCESS_TOKEN }}
         target_branch: 'gh-pages'
