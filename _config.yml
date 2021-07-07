@@ -83,6 +83,6 @@ featured-condition-size: 1              # A tag will be featured if the size of 
 friends: [
     {
          title: "常尾巴",
-         href: "https://changweiba.github.io/"
+         href: "https://github.com/changweiba"
      }
  ]
