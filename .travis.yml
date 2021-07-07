@@ -1,0 +1,31 @@
+language: ruby
+rvm:
+  - 2.3.3
+#cache: bundler
+before_install:
+ 
+script:
+  - bundle install
+  - bundle exec jekyll build
+after_success:
+  - ls -a
+#  - git clone https://github.com/zhouhaoo/zhouhaoo.github.io.git
+#  - cd zhouhaoo.github.io && rm -rf * && cp -r ../_site/* .
+  - mv CNAME README.md -t _site/
+  - cd _site
+  - ls -a
+  - git init
+  - git config user.name "zhouhaoo"
+  - git config user.email "zhouhao7@icloud.com"
+  - git add --all .
+  - git commit -m "Travis-CI auto builder"
+  - git remote add origin https://$DEPLOY_TOKEN@github.com/zhouhaoo/zhouhaoo.github.io.git
+  - git remote show origin
+  - git push --force origin master
+#  - git push origin master
+branches:
+  only:
+  - gh-pages
+env:
+  global:
+  - NOKOGIRI_USE_SYSTEM_LIBRARIES=true
