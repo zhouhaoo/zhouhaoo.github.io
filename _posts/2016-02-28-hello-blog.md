@@ -2,7 +2,7 @@
 layout:     post
 title:      "利用HEXO+GitHub创建博客"
 subtitle:   " \"Hello World, Hello Blog\""
-date:       2015-02-28 12:46:25
+date:       2016-02-28 12:46:25
 author:     "zhouhaoo"
 header-img: "img/post-bg-2015.jpg"
 tags:
