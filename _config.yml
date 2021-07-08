@@ -5,8 +5,7 @@ header-img: img/home-bg.jpg
 email: zhouhao0912@gmail.com
 description: "周豪, zhouhao, 周豪的博客，zhouhao blog， 博客，个人网站，android， 安卓，笔记，移动端"
 keyword: ""
-url: "http://zhouhaoh.com"              # your host, for absolute URL
-# baseurl: "/huxblog-boilerplate"         # for example, '/blog' if your blog hosted on 'host/blog'
+url: "https://zhouhaoh.com"              # your host, for absolute URL
 
 
 
