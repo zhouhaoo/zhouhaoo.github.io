@@ -1,3 +1,14 @@
+---
+layout:     post
+title:      " kotlin-协程"
+subtitle:   "coroutine"
+date:       2020-07-03
+author:     "zhouhaoh"
+catalog: true
+tags:
+- Kotlin
+---
+
 ## 协程
 
 > 挂起(suspend)   --> 恢复(resume)、用同步的代码到达异步的效果。
@@ -25,7 +36,7 @@ suspend fun xxx(){
 }
 ```
 
-挂起函数只能在其他挂起函数或者协程中调用，通过*Continuation*实现
+挂起函数只能在其他挂起函数或者协程中调用，通过*Continuation*实现， 这种转换叫：CPS 转换(Continuation-Passing-Style Transformation)。
 
 ```kotlin
 public interface Continuation<in T> {
@@ -54,11 +65,9 @@ fun bar(a: Int, continuation: Continuation<String>): Any{
 
 ```
 
+#### kotlin标准库
 
-
-### kotlin标准库：
-
-1. 协程上下文 Context：协程执行过程中需要携带数据，类似List 。
+1. 协程上下文 CoroutineContext：协程执行过程中需要携带数据，类似List 。
 
    ```kotlin
    public interface CoroutineContext {
@@ -83,12 +92,12 @@ fun bar(a: Int, continuation: Continuation<String>): Any{
 
 3. 挂起函数
 
-#### 上下文
-
-
-
-###  协程框架：
+####  协程框架
 
 1. Job
+
 2. 调度器
+
+   调度器是上下文的实现。
+
 3. 作用域
