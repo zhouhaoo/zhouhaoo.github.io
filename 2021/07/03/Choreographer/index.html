@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="周豪, zhouhao, 周豪的博客，zhouhao blog， 博客，个人网站，android， 安卓，笔记，移动端">
+    <meta name="keywords"  content="">
+    <meta name="theme-color" content="">
+    
+    <title> Choreographer - 周豪的博客 | Zhouhao Blog</title>
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/pwa/manifest.json">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/img/favicon.ico">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://zhouhaoh.com/2021/07/03/Choreographer/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Zhouhao Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    var __HuxNav__ = {
+        close: function(){
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        },
+        open: function(){
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+
+    // Bind Event
+    $toggle.addEventListener('click', function(e){
+        if ($navbar.className.indexOf('in') > 0) {
+            __HuxNav__.close()
+        }else{
+            __HuxNav__.open()
+        }
+    })
+
+    /**
+     * Since Fastclick is used to delegate 'touchstart' globally
+     * to hack 300ms delay in iOS by performing a fake 'click',
+     * Using 'e.stopPropagation' to stop 'touchstart' event from 
+     * $toggle/$collapse will break global delegation.
+     * 
+     * Instead, we use a 'e.target' filter to prevent handler
+     * added to document close HuxNav.  
+     *
+     * Also, we use 'click' instead of 'touchstart' as compromise
+     */
+    document.addEventListener('click', function(e){
+        if(e.target == $toggle) return;
+        if(e.target.className == 'icon-bar') return;
+        __HuxNav__.close();
+    })
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/home-bg.jpg" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        position: relative;
+        background-image: url('/img/home-bg.jpg')
+    }
+
+    
+</style>
+<header class="intro-header" >
+    <div class="header-mask"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#Android" title="Android">Android</a>
+                        
+                    </div>
+                    <h1> Choreographer</h1>
+                    
+                    
+                    <h2 class="subheading">vsync处理</h2>
+                    
+                    <span class="meta">Posted by zhouhaoh on 2021年07月03日</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<h4 id="vsync机制">VSync机制</h4>
+
+<p>16毫秒一个信号，垂直同步机制，同步UI绘制和动画，使他们可以获得一个达到<code class="language-plaintext highlighter-rouge">60fps</code>的固定帧率。Choreographer负责这个机制，接收到后执行绘制流程。就算屏幕界面保持不变，当接收到<code class="language-plaintext highlighter-rouge">vsync</code>信号的时候，也会刷新屏幕。</p>
+
+<h4 id="choreographer机制">Choreographer机制</h4>
+
+<p>消息处理器，根据vsync型号来计算帧的绘制，主要处理三种回调：</p>
+
+<ol>
+  <li>CALLBACK_INPUT</li>
+  <li>CALLBACK_ANIMATION</li>
+  <li>CALLBACK_TRAVERSAL</li>
+</ol>
+
+<p>在<code class="language-plaintext highlighter-rouge">ViewRootImpl</code>中的<code class="language-plaintext highlighter-rouge">scheduleTraversals</code>方法中，会执行mTraversalRunnable的run方法。最终会执行view绘制流程，</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kt">void</span> <span class="nf">scheduleTraversals</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">mTraversalScheduled</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">mTraversalScheduled</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+            <span class="c1">//发送同步屏障</span>
+            <span class="n">mTraversalBarrier</span> <span class="o">=</span> <span class="n">mHandler</span><span class="o">.</span><span class="na">getLooper</span><span class="o">().</span><span class="na">getQueue</span><span class="o">().</span><span class="na">postSyncBarrier</span><span class="o">();</span>
+            <span class="c1">//执行了postCallBack，类型：CALLBACK_TRAVERSAL</span>
+            <span class="n">mChoreographer</span><span class="o">.</span><span class="na">postCallback</span><span class="o">(</span>
+                    <span class="nc">Choreographer</span><span class="o">.</span><span class="na">CALLBACK_TRAVERSAL</span><span class="o">,</span> <span class="n">mTraversalRunnable</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">mUnbufferedInputDispatch</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">scheduleConsumeBatchedInput</span><span class="o">();</span>
+            <span class="o">}</span>
+            <span class="n">notifyRendererOfFramePending</span><span class="o">();</span>
+            <span class="n">pokeDrawLockIfNeeded</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>进入<code class="language-plaintext highlighter-rouge">postCallback</code>方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nd">@TestApi</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">postCallback</span><span class="o">(</span><span class="kt">int</span> <span class="n">callbackType</span><span class="o">,</span> <span class="nc">Runnable</span> <span class="n">action</span><span class="o">,</span> <span class="nc">Object</span> <span class="n">token</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">postCallbackDelayed</span><span class="o">(</span><span class="n">callbackType</span><span class="o">,</span> <span class="n">action</span><span class="o">,</span> <span class="n">token</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nd">@TestApi</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">postCallbackDelayed</span><span class="o">(</span><span class="kt">int</span> <span class="n">callbackType</span><span class="o">,</span>
+            <span class="nc">Runnable</span> <span class="n">action</span><span class="o">,</span> <span class="nc">Object</span> <span class="n">token</span><span class="o">,</span> <span class="kt">long</span> <span class="n">delayMillis</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">action</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span><span class="s">"action must not be null"</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">callbackType</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="o">||</span> <span class="n">callbackType</span> <span class="o">&gt;</span> <span class="no">CALLBACK_LAST</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span><span class="s">"callbackType is invalid"</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="n">postCallbackDelayedInternal</span><span class="o">(</span><span class="n">callbackType</span><span class="o">,</span> <span class="n">action</span><span class="o">,</span> <span class="n">token</span><span class="o">,</span> <span class="n">delayMillis</span><span class="o">);</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kt">void</span> <span class="nf">postCallbackDelayedInternal</span><span class="o">(</span><span class="kt">int</span> <span class="n">callbackType</span><span class="o">,</span>
+            <span class="nc">Object</span> <span class="n">action</span><span class="o">,</span> <span class="nc">Object</span> <span class="n">token</span><span class="o">,</span> <span class="kt">long</span> <span class="n">delayMillis</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="no">DEBUG_FRAMES</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"PostCallback: type="</span> <span class="o">+</span> <span class="n">callbackType</span>
+                    <span class="o">+</span> <span class="s">", action="</span> <span class="o">+</span> <span class="n">action</span> <span class="o">+</span> <span class="s">", token="</span> <span class="o">+</span> <span class="n">token</span>
+                    <span class="o">+</span> <span class="s">", delayMillis="</span> <span class="o">+</span> <span class="n">delayMillis</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="kd">synchronized</span> <span class="o">(</span><span class="n">mLock</span><span class="o">)</span> <span class="o">{</span>
+            <span class="kd">final</span> <span class="kt">long</span> <span class="n">now</span> <span class="o">=</span> <span class="nc">SystemClock</span><span class="o">.</span><span class="na">uptimeMillis</span><span class="o">();</span>
+            <span class="kd">final</span> <span class="kt">long</span> <span class="n">dueTime</span> <span class="o">=</span> <span class="n">now</span> <span class="o">+</span> <span class="n">delayMillis</span><span class="o">;</span>
+            <span class="c1">//****！！！！将action封装成CallbackRecord存储，后续会取出来执行。</span>
+            <span class="n">mCallbackQueues</span><span class="o">[</span><span class="n">callbackType</span><span class="o">].</span><span class="na">addCallbackLocked</span><span class="o">(</span><span class="n">dueTime</span><span class="o">,</span> <span class="n">action</span><span class="o">,</span> <span class="n">token</span><span class="o">);</span>
+
+            <span class="k">if</span> <span class="o">(</span><span class="n">dueTime</span> <span class="o">&lt;=</span> <span class="n">now</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">scheduleFrameLocked</span><span class="o">(</span><span class="n">now</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="nc">Message</span> <span class="n">msg</span> <span class="o">=</span> <span class="n">mHandler</span><span class="o">.</span><span class="na">obtainMessage</span><span class="o">(</span><span class="no">MSG_DO_SCHEDULE_CALLBACK</span><span class="o">,</span> <span class="n">action</span><span class="o">);</span>
+                <span class="n">msg</span><span class="o">.</span><span class="na">arg1</span> <span class="o">=</span> <span class="n">callbackType</span><span class="o">;</span>
+                <span class="n">msg</span><span class="o">.</span><span class="na">setAsynchronous</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+                <span class="n">mHandler</span><span class="o">.</span><span class="na">sendMessageAtTime</span><span class="o">(</span><span class="n">msg</span><span class="o">,</span> <span class="n">dueTime</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>根据以上代码：token=null，delayMillis=0，所以会进入if条件判断，进入<code class="language-plaintext highlighter-rouge">  scheduleFrameLocked(now);</code>方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kd">private</span> <span class="kt">void</span> <span class="nf">scheduleFrameLocked</span><span class="o">(</span><span class="kt">long</span> <span class="n">now</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">mFrameScheduled</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">mFrameScheduled</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="no">USE_VSYNC</span><span class="o">)</span> <span class="o">{</span><span class="c1">//默认为true</span>
+                <span class="k">if</span> <span class="o">(</span><span class="no">DEBUG_FRAMES</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Scheduling next frame on vsync."</span><span class="o">);</span>
+                <span class="o">}</span>
+
+                <span class="c1">// If running on the Looper thread, then schedule the vsync immediately,</span>
+                <span class="c1">// otherwise post a message to schedule the vsync from the UI thread</span>
+                <span class="c1">// as soon as possible.</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">isRunningOnLooperThreadLocked</span><span class="o">())</span> <span class="o">{</span>
+                    <span class="n">scheduleVsyncLocked</span><span class="o">();</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                    <span class="nc">Message</span> <span class="n">msg</span> <span class="o">=</span> <span class="n">mHandler</span><span class="o">.</span><span class="na">obtainMessage</span><span class="o">(</span><span class="no">MSG_DO_SCHEDULE_VSYNC</span><span class="o">);</span>
+                    <span class="n">msg</span><span class="o">.</span><span class="na">setAsynchronous</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+                    <span class="n">mHandler</span><span class="o">.</span><span class="na">sendMessageAtFrontOfQueue</span><span class="o">(</span><span class="n">msg</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="kd">final</span> <span class="kt">long</span> <span class="n">nextFrameTime</span> <span class="o">=</span> <span class="nc">Math</span><span class="o">.</span><span class="na">max</span><span class="o">(</span>
+                        <span class="n">mLastFrameTimeNanos</span> <span class="o">/</span> <span class="nc">TimeUtils</span><span class="o">.</span><span class="na">NANOS_PER_MS</span> <span class="o">+</span> <span class="n">sFrameDelay</span><span class="o">,</span> <span class="n">now</span><span class="o">);</span>
+                <span class="k">if</span> <span class="o">(</span><span class="no">DEBUG_FRAMES</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Scheduling next frame in "</span> <span class="o">+</span> <span class="o">(</span><span class="n">nextFrameTime</span> <span class="o">-</span> <span class="n">now</span><span class="o">)</span> <span class="o">+</span> <span class="s">" ms."</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="nc">Message</span> <span class="n">msg</span> <span class="o">=</span> <span class="n">mHandler</span><span class="o">.</span><span class="na">obtainMessage</span><span class="o">(</span><span class="no">MSG_DO_FRAME</span><span class="o">);</span>
+                <span class="n">msg</span><span class="o">.</span><span class="na">setAsynchronous</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+                <span class="n">mHandler</span><span class="o">.</span><span class="na">sendMessageAtTime</span><span class="o">(</span><span class="n">msg</span><span class="o">,</span> <span class="n">nextFrameTime</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>最终会判断looper的线程，执行<code class="language-plaintext highlighter-rouge">scheduleVsyncLocked()</code>方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kd">private</span> <span class="kt">void</span> <span class="nf">scheduleVsyncLocked</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">mDisplayEventReceiver</span><span class="o">.</span><span class="na">scheduleVsync</span><span class="o">();</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>通过DisplayEventReceiver调用native的方法：最终回调在onVsync方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">// Called from native code.</span>
+    <span class="nd">@SuppressWarnings</span><span class="o">(</span><span class="s">"unused"</span><span class="o">)</span>
+    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">dispatchVsync</span><span class="o">(</span><span class="kt">long</span> <span class="n">timestampNanos</span><span class="o">,</span> <span class="kt">int</span> <span class="n">builtInDisplayId</span><span class="o">,</span> <span class="kt">int</span> <span class="n">frame</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">onVsync</span><span class="o">(</span><span class="n">timestampNanos</span><span class="o">,</span> <span class="n">builtInDisplayId</span><span class="o">,</span> <span class="n">frame</span><span class="o">);</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>而在onVsync方法中，发送了一个Message，mDisplayEventReceiver实现了Runnable，会执行mDisplayEventReceiver的run方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nc">Message</span> <span class="n">msg</span> <span class="o">=</span> <span class="nc">Message</span><span class="o">.</span><span class="na">obtain</span><span class="o">(</span><span class="n">mHandler</span><span class="o">,</span> <span class="k">this</span><span class="o">);</span>
+<span class="n">msg</span><span class="o">.</span><span class="na">setAsynchronous</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+</code></pre></div></div>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+            <span class="n">mHavePendingVsync</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+            <span class="n">doFrame</span><span class="o">(</span><span class="n">mTimestampNanos</span><span class="o">,</span> <span class="n">mFrame</span><span class="o">);</span>
+        <span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kt">void</span> <span class="nf">doFrame</span><span class="o">(</span><span class="kt">long</span> <span class="n">frameTimeNanos</span><span class="o">,</span> <span class="kt">int</span> <span class="n">frame</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">final</span> <span class="kt">long</span> <span class="n">startNanos</span><span class="o">;</span>
+        <span class="kd">synchronized</span> <span class="o">(</span><span class="n">mLock</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">mFrameScheduled</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span><span class="o">;</span> <span class="c1">// no work to do</span>
+            <span class="o">}</span>
+
+            <span class="k">if</span> <span class="o">(</span><span class="no">DEBUG_JANK</span> <span class="o">&amp;&amp;</span> <span class="n">mDebugPrintNextFrameTimeDelta</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">mDebugPrintNextFrameTimeDelta</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+                <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Frame time delta: "</span>
+                        <span class="o">+</span> <span class="o">((</span><span class="n">frameTimeNanos</span> <span class="o">-</span> <span class="n">mLastFrameTimeNanos</span><span class="o">)</span> <span class="o">*</span> <span class="mf">0.000001f</span><span class="o">)</span> <span class="o">+</span> <span class="s">" ms"</span><span class="o">);</span>
+            <span class="o">}</span>
+
+            <span class="kt">long</span> <span class="n">intendedFrameTimeNanos</span> <span class="o">=</span> <span class="n">frameTimeNanos</span><span class="o">;</span>
+            <span class="n">startNanos</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+            <span class="kd">final</span> <span class="kt">long</span> <span class="n">jitterNanos</span> <span class="o">=</span> <span class="n">startNanos</span> <span class="o">-</span> <span class="n">frameTimeNanos</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">jitterNanos</span> <span class="o">&gt;=</span> <span class="n">mFrameIntervalNanos</span><span class="o">)</span> <span class="o">{</span>
+                <span class="kd">final</span> <span class="kt">long</span> <span class="n">skippedFrames</span> <span class="o">=</span> <span class="n">jitterNanos</span> <span class="o">/</span> <span class="n">mFrameIntervalNanos</span><span class="o">;</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">skippedFrames</span> <span class="o">&gt;=</span> <span class="no">SKIPPED_FRAME_WARNING_LIMIT</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="nc">Log</span><span class="o">.</span><span class="na">i</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Skipped "</span> <span class="o">+</span> <span class="n">skippedFrames</span> <span class="o">+</span> <span class="s">" frames!  "</span>
+                            <span class="o">+</span> <span class="s">"The application may be doing too much work on its main thread."</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="kd">final</span> <span class="kt">long</span> <span class="n">lastFrameOffset</span> <span class="o">=</span> <span class="n">jitterNanos</span> <span class="o">%</span> <span class="n">mFrameIntervalNanos</span><span class="o">;</span>
+                <span class="k">if</span> <span class="o">(</span><span class="no">DEBUG_JANK</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Missed vsync by "</span> <span class="o">+</span> <span class="o">(</span><span class="n">jitterNanos</span> <span class="o">*</span> <span class="mf">0.000001f</span><span class="o">)</span> <span class="o">+</span> <span class="s">" ms "</span>
+                            <span class="o">+</span> <span class="s">"which is more than the frame interval of "</span>
+                            <span class="o">+</span> <span class="o">(</span><span class="n">mFrameIntervalNanos</span> <span class="o">*</span> <span class="mf">0.000001f</span><span class="o">)</span> <span class="o">+</span> <span class="s">" ms!  "</span>
+                            <span class="o">+</span> <span class="s">"Skipping "</span> <span class="o">+</span> <span class="n">skippedFrames</span> <span class="o">+</span> <span class="s">" frames and setting frame "</span>
+                            <span class="o">+</span> <span class="s">"time to "</span> <span class="o">+</span> <span class="o">(</span><span class="n">lastFrameOffset</span> <span class="o">*</span> <span class="mf">0.000001f</span><span class="o">)</span> <span class="o">+</span> <span class="s">" ms in the past."</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="n">frameTimeNanos</span> <span class="o">=</span> <span class="n">startNanos</span> <span class="o">-</span> <span class="n">lastFrameOffset</span><span class="o">;</span>
+            <span class="o">}</span>
+
+            <span class="k">if</span> <span class="o">(</span><span class="n">frameTimeNanos</span> <span class="o">&lt;</span> <span class="n">mLastFrameTimeNanos</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="no">DEBUG_JANK</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Frame time appears to be going backwards.  May be due to a "</span>
+                            <span class="o">+</span> <span class="s">"previously skipped frame.  Waiting for next vsync."</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="n">scheduleVsyncLocked</span><span class="o">();</span>
+                <span class="k">return</span><span class="o">;</span>
+            <span class="o">}</span>
+
+            <span class="k">if</span> <span class="o">(</span><span class="n">mFPSDivisor</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+                <span class="kt">long</span> <span class="n">timeSinceVsync</span> <span class="o">=</span> <span class="n">frameTimeNanos</span> <span class="o">-</span> <span class="n">mLastFrameTimeNanos</span><span class="o">;</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">timeSinceVsync</span> <span class="o">&lt;</span> <span class="o">(</span><span class="n">mFrameIntervalNanos</span> <span class="o">*</span> <span class="n">mFPSDivisor</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">timeSinceVsync</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">scheduleVsyncLocked</span><span class="o">();</span>
+                    <span class="k">return</span><span class="o">;</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+
+            <span class="n">mFrameInfo</span><span class="o">.</span><span class="na">setVsync</span><span class="o">(</span><span class="n">intendedFrameTimeNanos</span><span class="o">,</span> <span class="n">frameTimeNanos</span><span class="o">);</span>
+            <span class="n">mFrameScheduled</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+            <span class="n">mLastFrameTimeNanos</span> <span class="o">=</span> <span class="n">frameTimeNanos</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="nc">Trace</span><span class="o">.</span><span class="na">traceBegin</span><span class="o">(</span><span class="nc">Trace</span><span class="o">.</span><span class="na">TRACE_TAG_VIEW</span><span class="o">,</span> <span class="s">"Choreographer#doFrame"</span><span class="o">);</span>
+            <span class="nc">AnimationUtils</span><span class="o">.</span><span class="na">lockAnimationClock</span><span class="o">(</span><span class="n">frameTimeNanos</span> <span class="o">/</span> <span class="nc">TimeUtils</span><span class="o">.</span><span class="na">NANOS_PER_MS</span><span class="o">);</span>
+
+            <span class="n">mFrameInfo</span><span class="o">.</span><span class="na">markInputHandlingStart</span><span class="o">();</span>
+            <span class="n">doCallbacks</span><span class="o">(</span><span class="nc">Choreographer</span><span class="o">.</span><span class="na">CALLBACK_INPUT</span><span class="o">,</span> <span class="n">frameTimeNanos</span><span class="o">);</span>
+
+            <span class="n">mFrameInfo</span><span class="o">.</span><span class="na">markAnimationsStart</span><span class="o">();</span>
+            <span class="n">doCallbacks</span><span class="o">(</span><span class="nc">Choreographer</span><span class="o">.</span><span class="na">CALLBACK_ANIMATION</span><span class="o">,</span> <span class="n">frameTimeNanos</span><span class="o">);</span>
+
+            <span class="n">mFrameInfo</span><span class="o">.</span><span class="na">markPerformTraversalsStart</span><span class="o">();</span>
+            <span class="n">doCallbacks</span><span class="o">(</span><span class="nc">Choreographer</span><span class="o">.</span><span class="na">CALLBACK_TRAVERSAL</span><span class="o">,</span> <span class="n">frameTimeNanos</span><span class="o">);</span>
+
+            <span class="n">doCallbacks</span><span class="o">(</span><span class="nc">Choreographer</span><span class="o">.</span><span class="na">CALLBACK_COMMIT</span><span class="o">,</span> <span class="n">frameTimeNanos</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="nc">AnimationUtils</span><span class="o">.</span><span class="na">unlockAnimationClock</span><span class="o">();</span>
+            <span class="nc">Trace</span><span class="o">.</span><span class="na">traceEnd</span><span class="o">(</span><span class="nc">Trace</span><span class="o">.</span><span class="na">TRACE_TAG_VIEW</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="no">DEBUG_FRAMES</span><span class="o">)</span> <span class="o">{</span>
+            <span class="kd">final</span> <span class="kt">long</span> <span class="n">endNanos</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+            <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Frame "</span> <span class="o">+</span> <span class="n">frame</span> <span class="o">+</span> <span class="s">": Finished, took "</span>
+                    <span class="o">+</span> <span class="o">(</span><span class="n">endNanos</span> <span class="o">-</span> <span class="n">startNanos</span><span class="o">)</span> <span class="o">*</span> <span class="mf">0.000001f</span> <span class="o">+</span> <span class="s">" ms, latency "</span>
+                    <span class="o">+</span> <span class="o">(</span><span class="n">startNanos</span> <span class="o">-</span> <span class="n">frameTimeNanos</span><span class="o">)</span> <span class="o">*</span> <span class="mf">0.000001f</span> <span class="o">+</span> <span class="s">" ms."</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>以上代码表是经过时间毫秒校验， 是否掉帧等情况，会执行scheduleVsyncLocked();总之条件满足通过之后，执行doCallbacks方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kt">void</span> <span class="nf">doCallbacks</span><span class="o">(</span><span class="kt">int</span> <span class="n">callbackType</span><span class="o">,</span> <span class="kt">long</span> <span class="n">frameTimeNanos</span><span class="o">)</span> <span class="o">{</span>
+        <span class="o">......</span>
+			<span class="k">for</span> <span class="o">(</span><span class="nc">CallbackRecord</span> <span class="n">c</span> <span class="o">=</span> <span class="n">callbacks</span><span class="o">;</span> <span class="n">c</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">;</span> <span class="n">c</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">next</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="no">DEBUG_FRAMES</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"RunCallback: type="</span> <span class="o">+</span> <span class="n">callbackType</span>
+                            <span class="o">+</span> <span class="s">", action="</span> <span class="o">+</span> <span class="n">c</span><span class="o">.</span><span class="na">action</span> <span class="o">+</span> <span class="s">", token="</span> <span class="o">+</span> <span class="n">c</span><span class="o">.</span><span class="na">token</span>
+                            <span class="o">+</span> <span class="s">", latencyMillis="</span> <span class="o">+</span> <span class="o">(</span><span class="nc">SystemClock</span><span class="o">.</span><span class="na">uptimeMillis</span><span class="o">()</span> <span class="o">-</span> <span class="n">c</span><span class="o">.</span><span class="na">dueTime</span><span class="o">));</span>
+                <span class="o">}</span>
+                <span class="n">c</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="n">frameTimeNanos</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">.......</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>取出之前CallbackRecord,即mTraversalRunnable作为action，执行其中的run方法，到此流程结束，后续会到ViewRootImpl中的doTraversal()，测量，布局，绘制了。</p>
+
+<h4 id="卡顿分析">卡顿分析</h4>
+
+<p>常见原因和解决方式</p>
+
+<h5 id="过度绘制">过度绘制</h5>
+
+<ul>
+  <li>去除不必要的背景色</li>
+  <li>布局的扁平化处理</li>
+  <li>减少透明色的使用</li>
+</ul>
+
+<h5 id="ui线程的复杂运算">UI线程的复杂运算</h5>
+
+<ul>
+  <li>减少UI线程中的数据运算</li>
+</ul>
+
+<h5 id="频繁的gc">频繁的GC</h5>
+
+<p>原因：内存抖动，瞬间产生大量的对象。</p>
+
+<ul>
+  <li>尽可能减少在for循环中new对象或在onDraw中创建对象等</li>
+  <li>尽量不要在循环中大量使用局部变量</li>
+</ul>
+
+
+
+                <hr style="visibility: hidden;">
+
+                
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2021/07/02/UI%E7%BB%98%E5%88%B6%E6%B5%81%E7%A8%8B/" data-toggle="tooltip" data-placement="top" title=" UI绘制流程">
+                        Previous<br>
+                        <span> UI绘制流程</span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+
+
+                
+
+                
+
+            </div>  
+
+    <!-- Side Catalog Container -->
+        
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">目录</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+                				<a href="/tags/#博客" title="博客" rel="2">
+                                    博客
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Android" title="Android" rel="20">
+                                    Android
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Kotlin" title="Kotlin" rel="2">
+                                    Kotlin
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+                				<a href="/tags/#笔记" title="笔记" rel="2">
+                                    笔记
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#网络请求" title="网络请求" rel="2">
+                                    网络请求
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#源码分析" title="源码分析" rel="2">
+                                    源码分析
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+                				<a href="/tags/#JAVA" title="JAVA" rel="3">
+                                    JAVA
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#framework" title="framework" rel="5">
+                                    framework
+                                </a>
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="https://github.com/changweiba">常尾巴</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'always',
+          placement: 'right',
+          icon: '#'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    
+                    <li>
+                        <a href="https://twitter.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    <li>
+                        <a target="_blank" href="https://www.facebook.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Zhouhao Blog 2021
+                    <br>
+                     Powered by <a href="http://jekyllrb.com/">jekyll</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+<!-- Service Worker -->
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/ 
+     - https://github.com/jneen/rouge/wiki/list-of-supported-languages-and-lexers   
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async('/js/jquery.tagcloud.js',function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-120305049-1';
+    var _gaDomain = 'auto';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
+
+
+
+
+
+<!-- Image to hack wechat -->
+<img src="/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

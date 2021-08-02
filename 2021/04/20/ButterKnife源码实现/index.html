@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="周豪, zhouhao, 周豪的博客，zhouhao blog， 博客，个人网站，android， 安卓，笔记，移动端">
+    <meta name="keywords"  content="">
+    <meta name="theme-color" content="">
+    
+    <title>ButterKnife源码实现 - 周豪的博客 | Zhouhao Blog</title>
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/pwa/manifest.json">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/img/favicon.ico">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://zhouhaoh.com/2021/04/20/ButterKnife%E6%BA%90%E7%A0%81%E5%AE%9E%E7%8E%B0/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Zhouhao Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    var __HuxNav__ = {
+        close: function(){
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        },
+        open: function(){
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+
+    // Bind Event
+    $toggle.addEventListener('click', function(e){
+        if ($navbar.className.indexOf('in') > 0) {
+            __HuxNav__.close()
+        }else{
+            __HuxNav__.open()
+        }
+    })
+
+    /**
+     * Since Fastclick is used to delegate 'touchstart' globally
+     * to hack 300ms delay in iOS by performing a fake 'click',
+     * Using 'e.stopPropagation' to stop 'touchstart' event from 
+     * $toggle/$collapse will break global delegation.
+     * 
+     * Instead, we use a 'e.target' filter to prevent handler
+     * added to document close HuxNav.  
+     *
+     * Also, we use 'click' instead of 'touchstart' as compromise
+     */
+    document.addEventListener('click', function(e){
+        if(e.target == $toggle) return;
+        if(e.target.className == 'icon-bar') return;
+        __HuxNav__.close();
+    })
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/home-bg.jpg" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        position: relative;
+        background-image: url('/img/home-bg.jpg')
+    }
+
+    
+</style>
+<header class="intro-header" >
+    <div class="header-mask"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#Android" title="Android">Android</a>
+                        
+                    </div>
+                    <h1>ButterKnife源码实现</h1>
+                    
+                    
+                    <h2 class="subheading"></h2>
+                    
+                    <span class="meta">Posted by zhouhaoh on 2021年04月20日</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<p>从butterKnife简单看apt技术的应用</p>
+
+<h3 id="apt与ioc框架区别">APT与IOC框架区别</h3>
+
+<ol>
+  <li>共同优点：实现了解耦目的。</li>
+  <li>技术点：ioc利用运行时反射技术，apt是注解处理器技术</li>
+  <li>ioc编写反射难一点，apt需要对照代码模板生成代码。</li>
+  <li>缺点：ioc在运行时反射会消耗一定的性能，apt由于生成了辅助类的代码文件，会增加apk包的大小</li>
+</ol>
+
+<h3 id="代码流程">代码流程</h3>
+
+<h4 id="在activity中初始化">在activity中初始化</h4>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nd">@Override</span>
+    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onCreate</span><span class="o">(</span><span class="nc">Bundle</span> <span class="n">savedInstanceState</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">.</span><span class="na">onCreate</span><span class="o">(</span><span class="n">savedInstanceState</span><span class="o">);</span>
+        <span class="nc">ButterKnife</span><span class="o">.</span><span class="na">bind</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>进入bind方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kd">public</span> <span class="kd">static</span> <span class="nc">Unbinder</span> <span class="nf">bind</span><span class="o">(</span><span class="nd">@NonNull</span> <span class="nc">Activity</span> <span class="n">target</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">View</span> <span class="n">sourceView</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="na">getWindow</span><span class="o">().</span><span class="na">getDecorView</span><span class="o">();</span>
+    <span class="k">return</span> <span class="nf">createBinding</span><span class="o">(</span><span class="n">target</span><span class="o">,</span> <span class="n">sourceView</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>调用createBinding方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kd">private</span> <span class="kd">static</span> <span class="nc">Unbinder</span> <span class="nf">createBinding</span><span class="o">(</span><span class="nd">@NonNull</span> <span class="nc">Object</span> <span class="n">target</span><span class="o">,</span> <span class="nd">@NonNull</span> <span class="nc">View</span> <span class="n">source</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">targetClass</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="na">getClass</span><span class="o">();</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">debug</span><span class="o">)</span> <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Looking up binding for "</span> <span class="o">+</span> <span class="n">targetClass</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+     <span class="c1">//注释1 发现一个构造方法</span>
+    <span class="nc">Constructor</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nc">Unbinder</span><span class="o">&gt;</span> <span class="n">constructor</span> <span class="o">=</span> <span class="n">findBindingConstructorForClass</span><span class="o">(</span><span class="n">targetClass</span><span class="o">);</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">constructor</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="nc">Unbinder</span><span class="o">.</span><span class="na">EMPTY</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="c1">//noinspection TryWithIdenticalCatches Resolves to API 19+ only type.</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="c1">//注释2</span>
+      <span class="k">return</span> <span class="n">constructor</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(</span><span class="n">target</span><span class="o">,</span> <span class="n">source</span><span class="o">);</span>
+   <span class="o">.............</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>注释1：findBindingConstructorForClass  找到一个通过apt生成的类， 详细代码：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="kd">static</span> <span class="nc">Constructor</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nc">Unbinder</span><span class="o">&gt;</span> <span class="nf">findBindingConstructorForClass</span><span class="o">(</span><span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">cls</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">Constructor</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nc">Unbinder</span><span class="o">&gt;</span> <span class="n">bindingCtor</span> <span class="o">=</span> <span class="no">BINDINGS</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">cls</span><span class="o">);</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">bindingCtor</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">debug</span><span class="o">)</span> <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"HIT: Cached in binding map."</span><span class="o">);</span>
+      <span class="k">return</span> <span class="n">bindingCtor</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="nc">String</span> <span class="n">clsName</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="na">getName</span><span class="o">();</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">clsName</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"android."</span><span class="o">)</span> <span class="o">||</span> <span class="n">clsName</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"java."</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">debug</span><span class="o">)</span> <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"MISS: Reached framework class. Abandoning search."</span><span class="o">);</span>
+      <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="c1">// 通过clsName拼接出xxx_ViewBinding，获取到构造器。</span>
+      <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">bindingClass</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="na">getClassLoader</span><span class="o">().</span><span class="na">loadClass</span><span class="o">(</span><span class="n">clsName</span> <span class="o">+</span> <span class="s">"_ViewBinding"</span><span class="o">);</span>
+      <span class="c1">//noinspection unchecked</span>
+      <span class="n">bindingCtor</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Constructor</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nc">Unbinder</span><span class="o">&gt;)</span> <span class="n">bindingClass</span><span class="o">.</span><span class="na">getConstructor</span><span class="o">(</span><span class="n">cls</span><span class="o">,</span> <span class="nc">View</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">debug</span><span class="o">)</span> <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"HIT: Loaded binding class and constructor."</span><span class="o">);</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">ClassNotFoundException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">debug</span><span class="o">)</span> <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Not found. Trying superclass "</span> <span class="o">+</span> <span class="n">cls</span><span class="o">.</span><span class="na">getSuperclass</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span>
+      <span class="n">bindingCtor</span> <span class="o">=</span> <span class="n">findBindingConstructorForClass</span><span class="o">(</span><span class="n">cls</span><span class="o">.</span><span class="na">getSuperclass</span><span class="o">());</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">NoSuchMethodException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="s">"Unable to find binding constructor for "</span> <span class="o">+</span> <span class="n">clsName</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="no">BINDINGS</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">cls</span><span class="o">,</span> <span class="n">bindingCtor</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">bindingCtor</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>注释2：初始化了一个apt生成的实例。最终代码就进入了XXX_ViewBinding 类的构造方法了。</p>
+
+<h4 id="xxx_viewbinding-分析">XXX_ViewBinding 分析</h4>
+
+<p>XXX_ViewBinding 实例代码：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ButterKnifeActivity_ViewBinding</span> <span class="kd">implements</span> <span class="nc">Unbinder</span> <span class="o">{</span>
+  <span class="kd">private</span> <span class="nc">ButterKnifeActivity</span> <span class="n">target</span><span class="o">;</span>
+
+  <span class="kd">private</span> <span class="nc">View</span> <span class="n">view2131296350</span><span class="o">;</span>
+
+  <span class="nd">@UiThread</span>
+  <span class="kd">public</span> <span class="nf">ButterKnifeActivity_ViewBinding</span><span class="o">(</span><span class="nc">ButterKnifeActivity</span> <span class="n">target</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">this</span><span class="o">(</span><span class="n">target</span><span class="o">,</span> <span class="n">target</span><span class="o">.</span><span class="na">getWindow</span><span class="o">().</span><span class="na">getDecorView</span><span class="o">());</span>
+  <span class="o">}</span>
+
+  <span class="nd">@UiThread</span>
+  <span class="kd">public</span> <span class="nf">ButterKnifeActivity_ViewBinding</span><span class="o">(</span><span class="kd">final</span> <span class="nc">ButterKnifeActivity</span> <span class="n">target</span><span class="o">,</span> <span class="nc">View</span> <span class="n">source</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">;</span>
+
+    <span class="nc">View</span> <span class="n">view</span><span class="o">;</span>
+    <span class="n">view</span> <span class="o">=</span> <span class="nc">Utils</span><span class="o">.</span><span class="na">findRequiredView</span><span class="o">(</span><span class="n">source</span><span class="o">,</span> <span class="no">R</span><span class="o">.</span><span class="na">id</span><span class="o">.</span><span class="na">tv</span><span class="o">,</span> <span class="s">"field 'tv' and method 'onViewClicked'"</span><span class="o">);</span>
+    <span class="n">target</span><span class="o">.</span><span class="na">tv</span> <span class="o">=</span> <span class="nc">Utils</span><span class="o">.</span><span class="na">castView</span><span class="o">(</span><span class="n">view</span><span class="o">,</span> <span class="no">R</span><span class="o">.</span><span class="na">id</span><span class="o">.</span><span class="na">tv</span><span class="o">,</span> <span class="s">"field 'tv'"</span><span class="o">,</span> <span class="nc">Button</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+    <span class="n">view2131296350</span> <span class="o">=</span> <span class="n">view</span><span class="o">;</span>
+    <span class="n">view</span><span class="o">.</span><span class="na">setOnClickListener</span><span class="o">(</span><span class="k">new</span> <span class="nc">DebouncingOnClickListener</span><span class="o">()</span> <span class="o">{</span>
+      <span class="nd">@Override</span>
+      <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doClick</span><span class="o">(</span><span class="nc">View</span> <span class="n">p0</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">target</span><span class="o">.</span><span class="na">onViewClicked</span><span class="o">(</span><span class="n">p0</span><span class="o">);</span>
+      <span class="o">}</span>
+    <span class="o">});</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="nd">@CallSuper</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">unbind</span><span class="o">()</span> <span class="o">{</span>
+    <span class="nc">ButterKnifeActivity</span> <span class="n">target</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">target</span><span class="o">;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">target</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="nc">IllegalStateException</span><span class="o">(</span><span class="s">"Bindings already cleared."</span><span class="o">);</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">target</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="n">target</span><span class="o">.</span><span class="na">tv</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="n">view2131296350</span><span class="o">.</span><span class="na">setOnClickListener</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+    <span class="n">view2131296350</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h5 id="控件赋值">控件赋值</h5>
+
+<p>从上面代码可以发现，在构造方法中，通过<code class="language-plaintext highlighter-rouge">Utils.findRequiredView</code>初始化view实例，最终也是<code class="language-plaintext highlighter-rouge">findViewById</code>赋值的。</p>
+
+<h5 id="点击事件">点击事件</h5>
+
+<p>控件赋值之后，关键类：<code class="language-plaintext highlighter-rouge">DebouncingOnClickListener</code>:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">abstract</span> <span class="kd">class</span> <span class="nc">DebouncingOnClickListener</span> <span class="kd">implements</span> <span class="nc">View</span><span class="o">.</span><span class="na">OnClickListener</span> <span class="o">{</span>
+  <span class="kd">static</span> <span class="kt">boolean</span> <span class="n">enabled</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+
+  <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">Runnable</span> <span class="no">ENABLE_AGAIN</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Runnable</span><span class="o">()</span> <span class="o">{</span>
+    <span class="nd">@Override</span> <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+      <span class="n">enabled</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+  <span class="o">};</span>
+
+  <span class="nd">@Override</span> <span class="kd">public</span> <span class="kd">final</span> <span class="kt">void</span> <span class="nf">onClick</span><span class="o">(</span><span class="nc">View</span> <span class="n">v</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">enabled</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">enabled</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+      <span class="n">v</span><span class="o">.</span><span class="na">post</span><span class="o">(</span><span class="no">ENABLE_AGAIN</span><span class="o">);</span>
+        <span class="c1">//调用回调</span>
+      <span class="n">doClick</span><span class="o">(</span><span class="n">v</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="kd">public</span> <span class="kd">abstract</span> <span class="kt">void</span> <span class="nf">doClick</span><span class="o">(</span><span class="nc">View</span> <span class="n">v</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>是一个抽象类，实现View.OnClickListener，onClick方法调用了 doClick的抽象方法。</p>
+
+<p>最终会调用 <code class="language-plaintext highlighter-rouge"> target.onViewClicked(p0);</code>onViewClicked方法是含有注解OnClick的方法。最终完成了点击事件的回调。</p>
+
+<h3 id="apt的代码生成">Apt的代码生成</h3>
+
+<p>其中一个<code class="language-plaintext highlighter-rouge">@BindView</code>示例:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// butterknife-compiler/src/main/java/butterknife/compiler/ButterKnifeProcessor.java</span>
+
+<span class="kd">private</span> <span class="kt">void</span> <span class="nf">parseBindView</span><span class="o">(</span><span class="nc">Element</span> <span class="n">element</span><span class="o">,</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">TypeElement</span><span class="o">,</span> <span class="nc">BindingSet</span><span class="o">.</span><span class="na">Builder</span><span class="o">&gt;</span> <span class="n">builderMap</span><span class="o">,</span>
+      <span class="nc">Set</span><span class="o">&lt;</span><span class="nc">TypeElement</span><span class="o">&gt;</span> <span class="n">erasedTargetNames</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">TypeElement</span> <span class="n">enclosingElement</span> <span class="o">=</span> <span class="o">(</span><span class="nc">TypeElement</span><span class="o">)</span> <span class="n">element</span><span class="o">.</span><span class="na">getEnclosingElement</span><span class="o">();</span>
+
+    <span class="c1">// Start by verifying common generated code restrictions.</span>
+    <span class="kt">boolean</span> <span class="n">hasError</span> <span class="o">=</span> <span class="n">isInaccessibleViaGeneratedCode</span><span class="o">(</span><span class="nc">BindView</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="s">"fields"</span><span class="o">,</span> <span class="n">element</span><span class="o">)</span>
+        <span class="o">||</span> <span class="n">isBindingInWrongPackage</span><span class="o">(</span><span class="nc">BindView</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">element</span><span class="o">);</span>
+
+    <span class="c1">// Verify that the target type extends from View.</span>
+    <span class="nc">TypeMirror</span> <span class="n">elementType</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="na">asType</span><span class="o">();</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">elementType</span><span class="o">.</span><span class="na">getKind</span><span class="o">()</span> <span class="o">==</span> <span class="nc">TypeKind</span><span class="o">.</span><span class="na">TYPEVAR</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">TypeVariable</span> <span class="n">typeVariable</span> <span class="o">=</span> <span class="o">(</span><span class="nc">TypeVariable</span><span class="o">)</span> <span class="n">elementType</span><span class="o">;</span>
+      <span class="n">elementType</span> <span class="o">=</span> <span class="n">typeVariable</span><span class="o">.</span><span class="na">getUpperBound</span><span class="o">();</span>
+    <span class="o">}</span>
+    <span class="nc">Name</span> <span class="n">qualifiedName</span> <span class="o">=</span> <span class="n">enclosingElement</span><span class="o">.</span><span class="na">getQualifiedName</span><span class="o">();</span>
+    <span class="nc">Name</span> <span class="n">simpleName</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="na">getSimpleName</span><span class="o">();</span>
+    <span class="k">if</span> <span class="o">(!</span><span class="n">isSubtypeOfType</span><span class="o">(</span><span class="n">elementType</span><span class="o">,</span> <span class="no">VIEW_TYPE</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">isInterface</span><span class="o">(</span><span class="n">elementType</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">elementType</span><span class="o">.</span><span class="na">getKind</span><span class="o">()</span> <span class="o">==</span> <span class="nc">TypeKind</span><span class="o">.</span><span class="na">ERROR</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">note</span><span class="o">(</span><span class="n">element</span><span class="o">,</span> <span class="s">"@%s field with unresolved type (%s) "</span>
+                <span class="o">+</span> <span class="s">"must elsewhere be generated as a View or interface. (%s.%s)"</span><span class="o">,</span>
+            <span class="nc">BindView</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getSimpleName</span><span class="o">(),</span> <span class="n">elementType</span><span class="o">,</span> <span class="n">qualifiedName</span><span class="o">,</span> <span class="n">simpleName</span><span class="o">);</span>
+      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+        <span class="n">error</span><span class="o">(</span><span class="n">element</span><span class="o">,</span> <span class="s">"@%s fields must extend from View or be an interface. (%s.%s)"</span><span class="o">,</span>
+            <span class="nc">BindView</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getSimpleName</span><span class="o">(),</span> <span class="n">qualifiedName</span><span class="o">,</span> <span class="n">simpleName</span><span class="o">);</span>
+        <span class="n">hasError</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">hasError</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="c1">// Assemble information on the field.</span>
+    <span class="kt">int</span> <span class="n">id</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="na">getAnnotation</span><span class="o">(</span><span class="nc">BindView</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">value</span><span class="o">();</span>
+    <span class="nc">BindingSet</span><span class="o">.</span><span class="na">Builder</span> <span class="n">builder</span> <span class="o">=</span> <span class="n">builderMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">enclosingElement</span><span class="o">);</span>
+    <span class="nc">Id</span> <span class="n">resourceId</span> <span class="o">=</span> <span class="n">elementToId</span><span class="o">(</span><span class="n">element</span><span class="o">,</span> <span class="nc">BindView</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">builder</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">String</span> <span class="n">existingBindingName</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="na">findExistingBindingName</span><span class="o">(</span><span class="n">resourceId</span><span class="o">);</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">existingBindingName</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">error</span><span class="o">(</span><span class="n">element</span><span class="o">,</span> <span class="s">"Attempt to use @%s for an already bound ID %d on '%s'. (%s.%s)"</span><span class="o">,</span>
+            <span class="nc">BindView</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getSimpleName</span><span class="o">(),</span> <span class="n">id</span><span class="o">,</span> <span class="n">existingBindingName</span><span class="o">,</span>
+            <span class="n">enclosingElement</span><span class="o">.</span><span class="na">getQualifiedName</span><span class="o">(),</span> <span class="n">element</span><span class="o">.</span><span class="na">getSimpleName</span><span class="o">());</span>
+        <span class="k">return</span><span class="o">;</span>
+      <span class="o">}</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+      <span class="n">builder</span> <span class="o">=</span> <span class="n">getOrCreateBindingBuilder</span><span class="o">(</span><span class="n">builderMap</span><span class="o">,</span> <span class="n">enclosingElement</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nc">String</span> <span class="n">name</span> <span class="o">=</span> <span class="n">simpleName</span><span class="o">.</span><span class="na">toString</span><span class="o">();</span>
+    <span class="nc">TypeName</span> <span class="n">type</span> <span class="o">=</span> <span class="nc">TypeName</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">elementType</span><span class="o">);</span>
+    <span class="kt">boolean</span> <span class="n">required</span> <span class="o">=</span> <span class="n">isFieldRequired</span><span class="o">(</span><span class="n">element</span><span class="o">);</span>
+
+    <span class="n">builder</span><span class="o">.</span><span class="na">addField</span><span class="o">(</span><span class="n">resourceId</span><span class="o">,</span> <span class="k">new</span> <span class="nc">FieldViewBinding</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">type</span><span class="o">,</span> <span class="n">required</span><span class="o">));</span>
+
+    <span class="c1">// Add the type-erased version to the valid binding targets set.</span>
+    <span class="n">erasedTargetNames</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">enclosingElement</span><span class="o">);</span>
+  <span class="o">}</span>
+
+</code></pre></div></div>
+
+
+
+                <hr style="visibility: hidden;">
+
+                
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2021/04/09/Activity%E5%90%AF%E5%8A%A8/" data-toggle="tooltip" data-placement="top" title="Activity启动过程">
+                        Previous<br>
+                        <span>Activity启动过程</span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/2021/05/21/Binder%E6%9C%BA%E5%88%B6/" data-toggle="tooltip" data-placement="top" title="Binder机制">
+                        Next<br>
+                        <span>Binder机制</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+
+
+                
+
+                
+
+            </div>  
+
+    <!-- Side Catalog Container -->
+        
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">目录</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+                				<a href="/tags/#博客" title="博客" rel="2">
+                                    博客
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Android" title="Android" rel="20">
+                                    Android
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Kotlin" title="Kotlin" rel="2">
+                                    Kotlin
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+                				<a href="/tags/#笔记" title="笔记" rel="2">
+                                    笔记
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#网络请求" title="网络请求" rel="2">
+                                    网络请求
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#源码分析" title="源码分析" rel="2">
+                                    源码分析
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+                				<a href="/tags/#JAVA" title="JAVA" rel="3">
+                                    JAVA
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#framework" title="framework" rel="5">
+                                    framework
+                                </a>
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="https://github.com/changweiba">常尾巴</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'always',
+          placement: 'right',
+          icon: '#'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    
+                    <li>
+                        <a href="https://twitter.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    <li>
+                        <a target="_blank" href="https://www.facebook.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Zhouhao Blog 2021
+                    <br>
+                     Powered by <a href="http://jekyllrb.com/">jekyll</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+<!-- Service Worker -->
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/ 
+     - https://github.com/jneen/rouge/wiki/list-of-supported-languages-and-lexers   
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async('/js/jquery.tagcloud.js',function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-120305049-1';
+    var _gaDomain = 'auto';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
+
+
+
+
+
+<!-- Image to hack wechat -->
+<img src="/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

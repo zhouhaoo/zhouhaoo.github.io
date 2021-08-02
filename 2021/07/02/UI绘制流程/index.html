@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="周豪, zhouhao, 周豪的博客，zhouhao blog， 博客，个人网站，android， 安卓，笔记，移动端">
+    <meta name="keywords"  content="">
+    <meta name="theme-color" content="">
+    
+    <title> UI绘制流程 - 周豪的博客 | Zhouhao Blog</title>
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/pwa/manifest.json">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/img/favicon.ico">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://zhouhaoh.com/2021/07/02/UI%E7%BB%98%E5%88%B6%E6%B5%81%E7%A8%8B/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Zhouhao Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    var __HuxNav__ = {
+        close: function(){
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        },
+        open: function(){
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+
+    // Bind Event
+    $toggle.addEventListener('click', function(e){
+        if ($navbar.className.indexOf('in') > 0) {
+            __HuxNav__.close()
+        }else{
+            __HuxNav__.open()
+        }
+    })
+
+    /**
+     * Since Fastclick is used to delegate 'touchstart' globally
+     * to hack 300ms delay in iOS by performing a fake 'click',
+     * Using 'e.stopPropagation' to stop 'touchstart' event from 
+     * $toggle/$collapse will break global delegation.
+     * 
+     * Instead, we use a 'e.target' filter to prevent handler
+     * added to document close HuxNav.  
+     *
+     * Also, we use 'click' instead of 'touchstart' as compromise
+     */
+    document.addEventListener('click', function(e){
+        if(e.target == $toggle) return;
+        if(e.target.className == 'icon-bar') return;
+        __HuxNav__.close();
+    })
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/home-bg.jpg" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        position: relative;
+        background-image: url('/img/home-bg.jpg')
+    }
+
+    
+</style>
+<header class="intro-header" >
+    <div class="header-mask"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#Android" title="Android">Android</a>
+                        
+                    </div>
+                    <h1> UI绘制流程</h1>
+                    
+                    
+                    <h2 class="subheading">android api 28</h2>
+                    
+                    <span class="meta">Posted by zhouhaoh on 2021年07月02日</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<h3 id="setcontentview">setContentView</h3>
+
+<p>代码流程的起点：</p>
+
+<div class="language-kotlin highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nf">setContentView</span><span class="p">(</span><span class="n">layoutResID</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>在Activity中setContentView后自己设置的布局就能添加到屏幕上：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// android.app.Activity.java    </span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">setContentView</span><span class="o">(</span><span class="nd">@LayoutRes</span> <span class="kt">int</span> <span class="n">layoutResID</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">getWindow</span><span class="o">().</span><span class="na">setContentView</span><span class="o">(</span><span class="n">layoutResID</span><span class="o">);</span>
+        <span class="n">initWindowDecorActionBar</span><span class="o">();</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>getWindow()获取到的是Window类，而Window的唯一实现类是PhoneWindow：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setContentView</span><span class="o">(</span><span class="kt">int</span> <span class="n">layoutResID</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// Note: FEATURE_CONTENT_TRANSITIONS may be set in the process of installing the window</span>
+        <span class="c1">// decor, when theme attributes and the like are crystalized. Do not check the feature</span>
+        <span class="c1">// before this happens.</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">mContentParent</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="c1">// 注释：创建顶层布局容器``DecorView``</span>
+            <span class="n">installDecor</span><span class="o">();</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(!</span><span class="n">hasFeature</span><span class="o">(</span><span class="no">FEATURE_CONTENT_TRANSITIONS</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">mContentParent</span><span class="o">.</span><span class="na">removeAllViews</span><span class="o">();</span>
+        <span class="o">}</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">hasFeature</span><span class="o">(</span><span class="no">FEATURE_CONTENT_TRANSITIONS</span><span class="o">))</span> <span class="o">{</span>
+            <span class="kd">final</span> <span class="nc">Scene</span> <span class="n">newScene</span> <span class="o">=</span> <span class="nc">Scene</span><span class="o">.</span><span class="na">getSceneForLayout</span><span class="o">(</span><span class="n">mContentParent</span><span class="o">,</span> <span class="n">layoutResID</span><span class="o">,</span>
+                    <span class="n">getContext</span><span class="o">());</span>
+            <span class="n">transitionTo</span><span class="o">(</span><span class="n">newScene</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="c1">//把layoutResID设置的布局，添加到contentParent布局中。</span>
+            <span class="n">mLayoutInflater</span><span class="o">.</span><span class="na">inflate</span><span class="o">(</span><span class="n">layoutResID</span><span class="o">,</span> <span class="n">mContentParent</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="n">mContentParent</span><span class="o">.</span><span class="na">requestApplyInsets</span><span class="o">();</span>
+        <span class="kd">final</span> <span class="nc">Callback</span> <span class="n">cb</span> <span class="o">=</span> <span class="n">getCallback</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">cb</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">isDestroyed</span><span class="o">())</span> <span class="o">{</span>
+            <span class="n">cb</span><span class="o">.</span><span class="na">onContentChanged</span><span class="o">();</span>
+        <span class="o">}</span>
+        <span class="n">mContentParentExplicitlySet</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="创建顶层布局容器decorview">创建顶层布局容器<code class="language-plaintext highlighter-rouge">DecorView</code></h4>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">installDecor</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">mForceDecorInstall</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">mDecor</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="c1">//创建decorView</span>
+            <span class="n">mDecor</span> <span class="o">=</span> <span class="n">generateDecor</span><span class="o">(-</span><span class="mi">1</span><span class="o">);</span>
+            <span class="n">mDecor</span><span class="o">.</span><span class="na">setDescendantFocusability</span><span class="o">(</span><span class="nc">ViewGroup</span><span class="o">.</span><span class="na">FOCUS_AFTER_DESCENDANTS</span><span class="o">);</span>
+            <span class="n">mDecor</span><span class="o">.</span><span class="na">setIsRootNamespace</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">mInvalidatePanelMenuPosted</span> <span class="o">&amp;&amp;</span> <span class="n">mInvalidatePanelMenuFeatures</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">mDecor</span><span class="o">.</span><span class="na">postOnAnimation</span><span class="o">(</span><span class="n">mInvalidatePanelMenuRunnable</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="n">mDecor</span><span class="o">.</span><span class="na">setWindow</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">mContentParent</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="c1">//c创建ContentParent</span>
+            <span class="n">mContentParent</span> <span class="o">=</span> <span class="n">generateLayout</span><span class="o">(</span><span class="n">mDecor</span><span class="o">);</span><span class="err">、</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>generateDecor会创建DecorView：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">protected</span> <span class="nc">DecorView</span> <span class="nf">generateDecor</span><span class="o">(</span><span class="kt">int</span> <span class="n">featureId</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// System process doesn't have application context and in that case we need to directly use</span>
+        <span class="c1">// the context we have. Otherwise we want the application context, so we don't cling to the</span>
+        <span class="c1">// activity.</span>
+        <span class="nc">Context</span> <span class="n">context</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">mUseDecorContext</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">Context</span> <span class="n">applicationContext</span> <span class="o">=</span> <span class="n">getContext</span><span class="o">().</span><span class="na">getApplicationContext</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">applicationContext</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">context</span> <span class="o">=</span> <span class="n">getContext</span><span class="o">();</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="n">context</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DecorContext</span><span class="o">(</span><span class="n">applicationContext</span><span class="o">,</span> <span class="n">getContext</span><span class="o">());</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">mTheme</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">context</span><span class="o">.</span><span class="na">setTheme</span><span class="o">(</span><span class="n">mTheme</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="n">getContext</span><span class="o">();</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">DecorView</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">featureId</span><span class="o">,</span> <span class="k">this</span><span class="o">,</span> <span class="n">getAttributes</span><span class="o">());</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="在顶层布局中加载基础viewgroup">在顶层布局中加载基础<code class="language-plaintext highlighter-rouge">ViewGroup</code></h4>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">protected</span> <span class="nc">ViewGroup</span> <span class="nf">generateLayout</span><span class="o">(</span><span class="nc">DecorView</span> <span class="n">decor</span><span class="o">)</span> <span class="o">{</span>
+  <span class="o">......</span>
+  	   <span class="kt">int</span> <span class="n">layoutResource</span><span class="o">;</span>
+        <span class="kt">int</span> <span class="n">features</span> <span class="o">=</span> <span class="n">getLocalFeatures</span><span class="o">();</span>
+        <span class="o">.........</span>
+                <span class="n">layoutResource</span> <span class="o">=</span> <span class="no">R</span><span class="o">.</span><span class="na">layout</span><span class="o">.</span><span class="na">screen_simple</span><span class="o">;</span>
+            <span class="o">......</span>
+	   <span class="n">mDecor</span><span class="o">.</span><span class="na">onResourcesLoaded</span><span class="o">(</span><span class="n">mLayoutInflater</span><span class="o">,</span> <span class="n">layoutResource</span><span class="o">);</span>
+		<span class="nc">ViewGroup</span> <span class="n">contentParent</span> <span class="o">=</span> <span class="o">(</span><span class="nc">ViewGroup</span><span class="o">)</span><span class="n">findViewById</span><span class="o">(</span><span class="no">ID_ANDROID_CONTENT</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">R.layout.screen_simple</code>布局示例：</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" encoding="utf-8"?&gt;</span>
+
+<span class="nt">&lt;LinearLayout</span> <span class="na">xmlns:android=</span><span class="s">"http://schemas.android.com/apk/res/android"</span>
+    <span class="na">android:layout_width=</span><span class="s">"match_parent"</span>
+    <span class="na">android:layout_height=</span><span class="s">"match_parent"</span>
+    <span class="na">android:fitsSystemWindows=</span><span class="s">"true"</span>
+    <span class="na">android:orientation=</span><span class="s">"vertical"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;ViewStub</span> <span class="na">android:id=</span><span class="s">"@+id/action_mode_bar_stub"</span>
+              <span class="na">android:inflatedId=</span><span class="s">"@+id/action_mode_bar"</span>
+              <span class="na">android:layout=</span><span class="s">"@layout/action_mode_bar"</span>
+              <span class="na">android:layout_width=</span><span class="s">"match_parent"</span>
+              <span class="na">android:layout_height=</span><span class="s">"wrap_content"</span>
+              <span class="na">android:theme=</span><span class="s">"?attr/actionBarTheme"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;FrameLayout</span>
+         <span class="na">android:id=</span><span class="s">"@android:id/content"</span>
+         <span class="na">android:layout_width=</span><span class="s">"match_parent"</span>
+         <span class="na">android:layout_height=</span><span class="s">"match_parent"</span>
+         <span class="na">android:foregroundInsidePadding=</span><span class="s">"false"</span>
+         <span class="na">android:foregroundGravity=</span><span class="s">"fill_horizontal|top"</span>
+         <span class="na">android:foreground=</span><span class="s">"?android:attr/windowContentOverlay"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/LinearLayout&gt;</span>
+
+</code></pre></div></div>
+
+<h4 id="把contentview添加到基础布局中的framelayout之中">把<code class="language-plaintext highlighter-rouge">ContentView</code>添加到基础布局中的<code class="language-plaintext highlighter-rouge">FrameLayout</code>之中</h4>
+
+<p>contentParent布局就是<code class="language-plaintext highlighter-rouge">android:id/content</code>的FrameLayout</p>
+
+<p>最后把根据获取到的配置布局添加到decorview中：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kt">void</span> <span class="nf">onResourcesLoaded</span><span class="o">(</span><span class="nc">LayoutInflater</span> <span class="n">inflater</span><span class="o">,</span> <span class="kt">int</span> <span class="n">layoutResource</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">mBackdropFrameRenderer</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">loadBackgroundDrawablesIfNeeded</span><span class="o">();</span>
+            <span class="n">mBackdropFrameRenderer</span><span class="o">.</span><span class="na">onResourcesLoaded</span><span class="o">(</span>
+                    <span class="k">this</span><span class="o">,</span> <span class="n">mResizingBackgroundDrawable</span><span class="o">,</span> <span class="n">mCaptionBackgroundDrawable</span><span class="o">,</span>
+                    <span class="n">mUserCaptionBackgroundDrawable</span><span class="o">,</span> <span class="n">getCurrentColor</span><span class="o">(</span><span class="n">mStatusColorViewState</span><span class="o">),</span>
+                    <span class="n">getCurrentColor</span><span class="o">(</span><span class="n">mNavigationColorViewState</span><span class="o">));</span>
+        <span class="o">}</span>
+
+        <span class="n">mDecorCaptionView</span> <span class="o">=</span> <span class="n">createDecorCaptionView</span><span class="o">(</span><span class="n">inflater</span><span class="o">);</span>
+        <span class="kd">final</span> <span class="nc">View</span> <span class="n">root</span> <span class="o">=</span> <span class="n">inflater</span><span class="o">.</span><span class="na">inflate</span><span class="o">(</span><span class="n">layoutResource</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">mDecorCaptionView</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">mDecorCaptionView</span><span class="o">.</span><span class="na">getParent</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">addView</span><span class="o">(</span><span class="n">mDecorCaptionView</span><span class="o">,</span>
+                        <span class="k">new</span> <span class="nc">ViewGroup</span><span class="o">.</span><span class="na">LayoutParams</span><span class="o">(</span><span class="no">MATCH_PARENT</span><span class="o">,</span> <span class="no">MATCH_PARENT</span><span class="o">));</span>
+            <span class="o">}</span>
+            <span class="n">mDecorCaptionView</span><span class="o">.</span><span class="na">addView</span><span class="o">(</span><span class="n">root</span><span class="o">,</span>
+                    <span class="k">new</span> <span class="nc">ViewGroup</span><span class="o">.</span><span class="na">MarginLayoutParams</span><span class="o">(</span><span class="no">MATCH_PARENT</span><span class="o">,</span> <span class="no">MATCH_PARENT</span><span class="o">));</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+
+            <span class="c1">// Put it below the color views.</span>
+            <span class="c1">//添加到了DecorView中。</span>
+            <span class="n">addView</span><span class="o">(</span><span class="n">root</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="k">new</span> <span class="nc">ViewGroup</span><span class="o">.</span><span class="na">LayoutParams</span><span class="o">(</span><span class="no">MATCH_PARENT</span><span class="o">,</span> <span class="no">MATCH_PARENT</span><span class="o">));</span>
+        <span class="o">}</span>
+        <span class="n">mContentRoot</span> <span class="o">=</span> <span class="o">(</span><span class="nc">ViewGroup</span><span class="o">)</span> <span class="n">root</span><span class="o">;</span>
+        <span class="n">initializeElevation</span><span class="o">();</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>最后回到PhoneWindow的setContentView方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setContentView</span><span class="o">(</span><span class="kt">int</span> <span class="n">layoutResID</span><span class="o">)</span> <span class="o">{</span>
+  <span class="o">....</span>
+            <span class="c1">//把layoutResID设置的布局，添加到contentParent布局中。</span>
+            <span class="n">mLayoutInflater</span><span class="o">.</span><span class="na">inflate</span><span class="o">(</span><span class="n">layoutResID</span><span class="o">,</span> <span class="n">mContentParent</span><span class="o">);</span>
+  <span class="o">....</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>inflate方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="nc">View</span> <span class="nf">inflate</span><span class="o">(</span><span class="nd">@LayoutRes</span> <span class="kt">int</span> <span class="n">resource</span><span class="o">,</span> <span class="nd">@Nullable</span> <span class="nc">ViewGroup</span> <span class="n">root</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">attachToRoot</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">final</span> <span class="nc">Resources</span> <span class="n">res</span> <span class="o">=</span> <span class="n">getContext</span><span class="o">().</span><span class="na">getResources</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(</span><span class="no">DEBUG</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"INFLATING from resource: \""</span> <span class="o">+</span> <span class="n">res</span><span class="o">.</span><span class="na">getResourceName</span><span class="o">(</span><span class="n">resource</span><span class="o">)</span> <span class="o">+</span> <span class="s">"\" ("</span>
+                    <span class="o">+</span> <span class="nc">Integer</span><span class="o">.</span><span class="na">toHexString</span><span class="o">(</span><span class="n">resource</span><span class="o">)</span> <span class="o">+</span> <span class="s">")"</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="kd">final</span> <span class="nc">XmlResourceParser</span> <span class="n">parser</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="na">getLayout</span><span class="o">(</span><span class="n">resource</span><span class="o">);</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="nf">inflate</span><span class="o">(</span><span class="n">parser</span><span class="o">,</span> <span class="n">root</span><span class="o">,</span> <span class="n">attachToRoot</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">parser</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>通过XmlResourceParser读取自定义的xml布局文件，最后通过inflate把自定义的布局添加到mContentParent中：</p>
+
+<h3 id="绘制流程">绘制流程</h3>
+
+<h4 id="绘制入口">绘制入口</h4>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c1">// ActivityThread.java</span>
+   <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">handleResumeActivity</span><span class="o">(</span><span class="nc">IBinder</span> <span class="n">token</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">finalStateRequest</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">isForward</span><span class="o">,</span>
+            <span class="nc">String</span> <span class="n">reason</span><span class="o">)</span> <span class="o">{</span>
+<span class="o">.....</span>
+        <span class="kd">final</span> <span class="nc">Activity</span> <span class="n">a</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">;</span>
+<span class="o">.....</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">window</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">a</span><span class="o">.</span><span class="na">mFinished</span> <span class="o">&amp;&amp;</span> <span class="n">willBeVisible</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">r</span><span class="o">.</span><span class="na">window</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">getWindow</span><span class="o">();</span>
+            <span class="nc">View</span> <span class="n">decor</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">window</span><span class="o">.</span><span class="na">getDecorView</span><span class="o">();</span>
+            <span class="n">decor</span><span class="o">.</span><span class="na">setVisibility</span><span class="o">(</span><span class="nc">View</span><span class="o">.</span><span class="na">INVISIBLE</span><span class="o">);</span>
+            <span class="c1">//通过activity获取到ViewManager</span>
+            <span class="nc">ViewManager</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="na">getWindowManager</span><span class="o">();</span>
+            <span class="nc">WindowManager</span><span class="o">.</span><span class="na">LayoutParams</span> <span class="n">l</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">window</span><span class="o">.</span><span class="na">getAttributes</span><span class="o">();</span>
+            <span class="n">a</span><span class="o">.</span><span class="na">mDecor</span> <span class="o">=</span> <span class="n">decor</span><span class="o">;</span>
+            <span class="n">l</span><span class="o">.</span><span class="na">type</span> <span class="o">=</span> <span class="nc">WindowManager</span><span class="o">.</span><span class="na">LayoutParams</span><span class="o">.</span><span class="na">TYPE_BASE_APPLICATION</span><span class="o">;</span>
+            <span class="n">l</span><span class="o">.</span><span class="na">softInputMode</span> <span class="o">|=</span> <span class="n">forwardBit</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">mPreserveWindow</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">a</span><span class="o">.</span><span class="na">mWindowAdded</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+                <span class="n">r</span><span class="o">.</span><span class="na">mPreserveWindow</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+                <span class="c1">// 创建ViewRootImpl</span>
+                <span class="nc">ViewRootImpl</span> <span class="n">impl</span> <span class="o">=</span> <span class="n">decor</span><span class="o">.</span><span class="na">getViewRootImpl</span><span class="o">();</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">impl</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">impl</span><span class="o">.</span><span class="na">notifyChildRebuilt</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">a</span><span class="o">.</span><span class="na">mVisibleFromClient</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(!</span><span class="n">a</span><span class="o">.</span><span class="na">mWindowAdded</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">a</span><span class="o">.</span><span class="na">mWindowAdded</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+                    <span class="c1">//通过ViewManager添加activity的decorview</span>
+                    <span class="n">wm</span><span class="o">.</span><span class="na">addView</span><span class="o">(</span><span class="n">decor</span><span class="o">,</span> <span class="n">l</span><span class="o">);</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                    <span class="c1">// The activity will get a callback for this {@link LayoutParams} change</span>
+                    <span class="c1">// earlier. However, at that time the decor will not be set (this is set</span>
+                    <span class="c1">// in this method), so no action will be taken. This call ensures the</span>
+                    <span class="c1">// callback occurs with the decor set.</span>
+                    <span class="n">a</span><span class="o">.</span><span class="na">onWindowAttributesChanged</span><span class="o">(</span><span class="n">l</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+<span class="o">......</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>从上面关键方法可以知道，ViewManager的实现类是WindowManagerImpl，所以其中的addView方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addView</span><span class="o">(</span><span class="nd">@NonNull</span> <span class="nc">View</span> <span class="n">view</span><span class="o">,</span> <span class="nd">@NonNull</span> <span class="nc">ViewGroup</span><span class="o">.</span><span class="na">LayoutParams</span> <span class="n">params</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">applyDefaultToken</span><span class="o">(</span><span class="n">params</span><span class="o">);</span>
+        <span class="n">mGlobal</span><span class="o">.</span><span class="na">addView</span><span class="o">(</span><span class="n">view</span><span class="o">,</span> <span class="n">params</span><span class="o">,</span> <span class="n">mContext</span><span class="o">.</span><span class="na">getDisplay</span><span class="o">(),</span> <span class="n">mParentWindow</span><span class="o">);</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>调用了mGlobal即<code class="language-plaintext highlighter-rouge">WindowManagerGlobal</code>的addView方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addView</span><span class="o">(</span><span class="nc">View</span> <span class="n">view</span><span class="o">,</span> <span class="nc">ViewGroup</span><span class="o">.</span><span class="na">LayoutParams</span> <span class="n">params</span><span class="o">,</span>
+            <span class="nc">Display</span> <span class="n">display</span><span class="o">,</span> <span class="nc">Window</span> <span class="n">parentWindow</span><span class="o">)</span> <span class="o">{</span>
+   <span class="o">....</span>
+        <span class="kd">final</span> <span class="nc">WindowManager</span><span class="o">.</span><span class="na">LayoutParams</span> <span class="n">wparams</span> <span class="o">=</span> <span class="o">(</span><span class="nc">WindowManager</span><span class="o">.</span><span class="na">LayoutParams</span><span class="o">)</span> <span class="n">params</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">parentWindow</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">parentWindow</span><span class="o">.</span><span class="na">adjustLayoutParamsForSubWindow</span><span class="o">(</span><span class="n">wparams</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="c1">// If there's no parent, then hardware acceleration for this view is</span>
+            <span class="c1">// set from the application's hardware acceleration setting.</span>
+            <span class="kd">final</span> <span class="nc">Context</span> <span class="n">context</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="na">getContext</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">context</span> <span class="o">!=</span> <span class="kc">null</span>
+                    <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">context</span><span class="o">.</span><span class="na">getApplicationInfo</span><span class="o">().</span><span class="na">flags</span>
+                            <span class="o">&amp;</span> <span class="nc">ApplicationInfo</span><span class="o">.</span><span class="na">FLAG_HARDWARE_ACCELERATED</span><span class="o">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">wparams</span><span class="o">.</span><span class="na">flags</span> <span class="o">|=</span> <span class="nc">WindowManager</span><span class="o">.</span><span class="na">LayoutParams</span><span class="o">.</span><span class="na">FLAG_HARDWARE_ACCELERATED</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="nc">ViewRootImpl</span> <span class="n">root</span><span class="o">;</span>
+        <span class="nc">View</span> <span class="n">panelParentView</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+
+        <span class="kd">synchronized</span> <span class="o">(</span><span class="n">mLock</span><span class="o">)</span> <span class="o">{</span>
+           <span class="o">.......</span>
+               <span class="c1">//创建ViewRootImpl</span>
+            <span class="n">root</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ViewRootImpl</span><span class="o">(</span><span class="n">view</span><span class="o">.</span><span class="na">getContext</span><span class="o">(),</span> <span class="n">display</span><span class="o">);</span>
+
+            <span class="n">view</span><span class="o">.</span><span class="na">setLayoutParams</span><span class="o">(</span><span class="n">wparams</span><span class="o">);</span>
+			<span class="c1">//存储布局信息</span>
+            <span class="n">mViews</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">view</span><span class="o">);</span>
+            <span class="n">mRoots</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">root</span><span class="o">);</span>
+            <span class="n">mParams</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">wparams</span><span class="o">);</span>
+
+            <span class="c1">// do this last because it fires off messages to start doing things</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="c1">//通过ViewRootImpl去setView</span>
+                <span class="n">root</span><span class="o">.</span><span class="na">setView</span><span class="o">(</span><span class="n">view</span><span class="o">,</span> <span class="n">wparams</span><span class="o">,</span> <span class="n">panelParentView</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">RuntimeException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="c1">// BadTokenException or InvalidDisplayException, clean up.</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">index</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">removeViewLocked</span><span class="o">(</span><span class="n">index</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="k">throw</span> <span class="n">e</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>mViews</th>
+      <th>mRoots</th>
+      <th>mParams</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>保存view对象</td>
+      <td>保存view关联的ViewRootImpl对象</td>
+      <td>保存创建顶层View的Layout参数</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>，发现最后通过创建ViewRootImpl中的setView了。</p>
+
+<h4 id="绘制的类和方法">绘制的类和方法</h4>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//    ViewRootImpl.java</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">setView</span><span class="o">(</span><span class="nc">View</span> <span class="n">view</span><span class="o">,</span> <span class="nc">WindowManager</span><span class="o">.</span><span class="na">LayoutParams</span> <span class="n">attrs</span><span class="o">,</span> <span class="nc">View</span> <span class="n">panelParentView</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
+    			<span class="o">......</span>
+    			<span class="n">requestLayout</span><span class="o">();</span>
+                <span class="o">......</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>requestLayout开始请求绘制的流程了：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">requestLayout</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">mHandlingLayoutInLayoutRequest</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">checkThread</span><span class="o">();</span>
+            <span class="n">mLayoutRequested</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+            <span class="n">scheduleTraversals</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>检查了线程，不在主线程就报错，再看scheduleTraversals方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kt">void</span> <span class="nf">scheduleTraversals</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">mTraversalScheduled</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">mTraversalScheduled</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+            <span class="n">mTraversalBarrier</span> <span class="o">=</span> <span class="n">mHandler</span><span class="o">.</span><span class="na">getLooper</span><span class="o">().</span><span class="na">getQueue</span><span class="o">().</span><span class="na">postSyncBarrier</span><span class="o">();</span>
+            <span class="c1">//通过Choreographerpost了一个回调mTraversalRunnable</span>
+            <span class="n">mChoreographer</span><span class="o">.</span><span class="na">postCallback</span><span class="o">(</span>
+                    <span class="nc">Choreographer</span><span class="o">.</span><span class="na">CALLBACK_TRAVERSAL</span><span class="o">,</span> <span class="n">mTraversalRunnable</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">mUnbufferedInputDispatch</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">scheduleConsumeBatchedInput</span><span class="o">();</span>
+            <span class="o">}</span>
+            <span class="n">notifyRendererOfFramePending</span><span class="o">();</span>
+            <span class="n">pokeDrawLockIfNeeded</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>会通过<a href="https://www.zhouhaoh.com/2021/07/03/Choreographer">Choreographer执行分析</a>执行TraversalRunnable的run方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+    <span class="kd">final</span> <span class="kd">class</span> <span class="nc">TraversalRunnable</span> <span class="kd">implements</span> <span class="nc">Runnable</span> <span class="o">{</span>
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+            <span class="n">doTraversal</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>doTraversal：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">doTraversal</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">mTraversalScheduled</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">mTraversalScheduled</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="n">mHandler</span><span class="o">.</span><span class="na">getLooper</span><span class="o">().</span><span class="na">getQueue</span><span class="o">().</span><span class="na">removeSyncBarrier</span><span class="o">(</span><span class="n">mTraversalBarrier</span><span class="o">);</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">mProfile</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">Debug</span><span class="o">.</span><span class="na">startMethodTracing</span><span class="o">(</span><span class="s">"ViewAncestor"</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="n">performTraversals</span><span class="o">();</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">mProfile</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">Debug</span><span class="o">.</span><span class="na">stopMethodTracing</span><span class="o">();</span>
+            <span class="n">mProfile</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>performTraversals():</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">performTraversals</span><span class="o">()</span> <span class="o">{</span>
+    	<span class="o">......</span>
+               <span class="n">performMeasure</span><span class="o">(</span><span class="n">childWidthMeasureSpec</span><span class="o">,</span> <span class="n">childHeightMeasureSpec</span><span class="o">);</span>
+    	<span class="o">......</span>
+              <span class="n">performLayout</span><span class="o">(</span><span class="n">lp</span><span class="o">,</span> <span class="n">mWidth</span><span class="o">,</span> <span class="n">mHeight</span><span class="o">);</span>
+    	<span class="o">......</span>
+              <span class="n">performDraw</span><span class="o">();</span>
+    	<span class="o">......</span>
+            
+            
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="绘制步骤">绘制步骤</h4>
+
+<p>在上面的是三个方法（performMeasure，performLayout，performDraw）中：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">performMeasure</span><span class="o">(</span><span class="kt">int</span> <span class="n">childWidthMeasureSpec</span><span class="o">,</span> <span class="kt">int</span> <span class="n">childHeightMeasureSpec</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">mView</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">return</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="nc">Trace</span><span class="o">.</span><span class="na">traceBegin</span><span class="o">(</span><span class="nc">Trace</span><span class="o">.</span><span class="na">TRACE_TAG_VIEW</span><span class="o">,</span> <span class="s">"measure"</span><span class="o">);</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="c1">//开始调用view的measure方法</span>
+            <span class="n">mView</span><span class="o">.</span><span class="na">measure</span><span class="o">(</span><span class="n">childWidthMeasureSpec</span><span class="o">,</span> <span class="n">childHeightMeasureSpec</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="nc">Trace</span><span class="o">.</span><span class="na">traceEnd</span><span class="o">(</span><span class="nc">Trace</span><span class="o">.</span><span class="na">TRACE_TAG_VIEW</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>依次调用ViewRootImpl中的：<strong>measure</strong>，<strong>layout</strong>，<strong>draw</strong>方法。</p>
+
+<h4 id="总结">总结</h4>
+
+<p>流程：ActivityThread—&gt;WindowMangerImpl-&gt;WindowManagerGlobal-&gt;ViewRootImpl-&gt;view</p>
+
+<h3 id="三大流程">三大流程</h3>
+
+<h4 id="测量">测量</h4>
+
+<h5 id="测量规则measurespec">测量规则：MeasureSpec</h5>
+
+<h4 id="布局">布局</h4>
+
+<h4 id="绘制">绘制</h4>
+
+<p>###</p>
+
+
+
+                <hr style="visibility: hidden;">
+
+                
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2021/06/04/EventBus%E6%BA%90%E7%A0%81%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B-%E5%89%AF%E6%9C%AC/" data-toggle="tooltip" data-placement="top" title=" Android事件总线-EventBus">
+                        Previous<br>
+                        <span> Android事件总线-EventBus</span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/2021/07/03/Choreographer/" data-toggle="tooltip" data-placement="top" title=" Choreographer">
+                        Next<br>
+                        <span> Choreographer</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+
+
+                
+
+                
+
+            </div>  
+
+    <!-- Side Catalog Container -->
+        
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">目录</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+                				<a href="/tags/#博客" title="博客" rel="2">
+                                    博客
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Android" title="Android" rel="20">
+                                    Android
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Kotlin" title="Kotlin" rel="2">
+                                    Kotlin
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+                				<a href="/tags/#笔记" title="笔记" rel="2">
+                                    笔记
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#网络请求" title="网络请求" rel="2">
+                                    网络请求
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#源码分析" title="源码分析" rel="2">
+                                    源码分析
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+                				<a href="/tags/#JAVA" title="JAVA" rel="3">
+                                    JAVA
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#framework" title="framework" rel="5">
+                                    framework
+                                </a>
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="https://github.com/changweiba">常尾巴</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'always',
+          placement: 'right',
+          icon: '#'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    
+                    <li>
+                        <a href="https://twitter.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    <li>
+                        <a target="_blank" href="https://www.facebook.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Zhouhao Blog 2021
+                    <br>
+                     Powered by <a href="http://jekyllrb.com/">jekyll</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+<!-- Service Worker -->
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/ 
+     - https://github.com/jneen/rouge/wiki/list-of-supported-languages-and-lexers   
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async('/js/jquery.tagcloud.js',function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-120305049-1';
+    var _gaDomain = 'auto';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
+
+
+
+
+
+<!-- Image to hack wechat -->
+<img src="/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

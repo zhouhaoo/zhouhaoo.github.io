@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="周豪, zhouhao, 周豪的博客，zhouhao blog， 博客，个人网站，android， 安卓，笔记，移动端">
+    <meta name="keywords"  content="">
+    <meta name="theme-color" content="">
+    
+    <title>Activity启动过程 - 周豪的博客 | Zhouhao Blog</title>
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/pwa/manifest.json">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/img/favicon.ico">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://zhouhaoh.com/2021/04/09/Activity%E5%90%AF%E5%8A%A8/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Zhouhao Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    var __HuxNav__ = {
+        close: function(){
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        },
+        open: function(){
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+
+    // Bind Event
+    $toggle.addEventListener('click', function(e){
+        if ($navbar.className.indexOf('in') > 0) {
+            __HuxNav__.close()
+        }else{
+            __HuxNav__.open()
+        }
+    })
+
+    /**
+     * Since Fastclick is used to delegate 'touchstart' globally
+     * to hack 300ms delay in iOS by performing a fake 'click',
+     * Using 'e.stopPropagation' to stop 'touchstart' event from 
+     * $toggle/$collapse will break global delegation.
+     * 
+     * Instead, we use a 'e.target' filter to prevent handler
+     * added to document close HuxNav.  
+     *
+     * Also, we use 'click' instead of 'touchstart' as compromise
+     */
+    document.addEventListener('click', function(e){
+        if(e.target == $toggle) return;
+        if(e.target.className == 'icon-bar') return;
+        __HuxNav__.close();
+    })
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/home-bg.jpg" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        position: relative;
+        background-image: url('/img/home-bg.jpg')
+    }
+
+    
+</style>
+<header class="intro-header" >
+    <div class="header-mask"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#Android" title="Android">Android</a>
+                        
+                        <a class="tag" href="/tags/#framework" title="framework">framework</a>
+                        
+                    </div>
+                    <h1>Activity启动过程</h1>
+                    
+                    
+                    <h2 class="subheading"></h2>
+                    
+                    <span class="meta">Posted by zhouhaoh on 2021年04月09日</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<p>SystemServer启动过程中，启动packageMangerService，启动了launcher app，之后就可以通过点击主界面了图标来启动app了。</p>
+
+<h3 id="launcher请求ams过程">Launcher请求AMS过程</h3>
+
+<p>在<strong>Launcher</strong> app中，最终通过startActivitySafely方法设置新activity任务栈，</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//packages/apps/Launcher3/src/com/android/launcher3/Launcher.java</span>
+
+<span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">startActivitySafely</span><span class="o">(</span><span class="nc">View</span> <span class="n">v</span><span class="o">,</span> <span class="nc">Intent</span> <span class="n">intent</span><span class="o">,</span> <span class="nc">ItemInfo</span> <span class="n">item</span><span class="o">)</span> <span class="o">{</span>
+     <span class="o">...</span>
+     <span class="n">intent</span><span class="o">.</span><span class="na">addFlags</span><span class="o">(</span><span class="nc">Intent</span><span class="o">.</span><span class="na">FLAG_ACTIVITY_NEW_TASK</span><span class="o">);</span><span class="c1">//1</span>
+     <span class="k">if</span> <span class="o">(</span><span class="n">v</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+         <span class="n">intent</span><span class="o">.</span><span class="na">setSourceBounds</span><span class="o">(</span><span class="n">getViewBounds</span><span class="o">(</span><span class="n">v</span><span class="o">));</span>
+     <span class="o">}</span>
+     <span class="k">try</span> <span class="o">{</span>
+         <span class="k">if</span> <span class="o">(</span><span class="nc">Utilities</span><span class="o">.</span><span class="na">ATLEAST_MARSHMALLOW</span>
+                 <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">item</span> <span class="k">instanceof</span> <span class="nc">ShortcutInfo</span><span class="o">)</span>
+                 <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">item</span><span class="o">.</span><span class="na">itemType</span> <span class="o">==</span> <span class="nc">Favorites</span><span class="o">.</span><span class="na">ITEM_TYPE_SHORTCUT</span>
+                  <span class="o">||</span> <span class="n">item</span><span class="o">.</span><span class="na">itemType</span> <span class="o">==</span> <span class="nc">Favorites</span><span class="o">.</span><span class="na">ITEM_TYPE_DEEP_SHORTCUT</span><span class="o">)</span>
+                 <span class="o">&amp;&amp;</span> <span class="o">!((</span><span class="nc">ShortcutInfo</span><span class="o">)</span> <span class="n">item</span><span class="o">).</span><span class="na">isPromise</span><span class="o">())</span> <span class="o">{</span>
+             <span class="n">startShortcutIntentSafely</span><span class="o">(</span><span class="n">intent</span><span class="o">,</span> <span class="n">optsBundle</span><span class="o">,</span> <span class="n">item</span><span class="o">);</span>
+         <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">user</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">user</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="nc">Process</span><span class="o">.</span><span class="na">myUserHandle</span><span class="o">()))</span> <span class="o">{</span>
+             <span class="n">startActivity</span><span class="o">(</span><span class="n">intent</span><span class="o">,</span> <span class="n">optsBundle</span><span class="o">);</span><span class="c1">//2</span>
+         <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+             <span class="nc">LauncherAppsCompat</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="k">this</span><span class="o">).</span><span class="na">startActivityForProfile</span><span class="o">(</span>
+                     <span class="n">intent</span><span class="o">.</span><span class="na">getComponent</span><span class="o">(),</span> <span class="n">user</span><span class="o">,</span> <span class="n">intent</span><span class="o">.</span><span class="na">getSourceBounds</span><span class="o">(),</span> <span class="n">optsBundle</span><span class="o">);</span>
+         <span class="o">}</span>
+         <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+     <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">ActivityNotFoundException</span><span class="o">|</span><span class="nc">SecurityException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+         <span class="nc">Toast</span><span class="o">.</span><span class="na">makeText</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="no">R</span><span class="o">.</span><span class="na">string</span><span class="o">.</span><span class="na">activity_not_found</span><span class="o">,</span> <span class="nc">Toast</span><span class="o">.</span><span class="na">LENGTH_SHORT</span><span class="o">).</span><span class="na">show</span><span class="o">();</span>
+         <span class="nc">Log</span><span class="o">.</span><span class="na">e</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Unable to launch. tag="</span> <span class="o">+</span> <span class="n">item</span> <span class="o">+</span> <span class="s">" intent="</span> <span class="o">+</span> <span class="n">intent</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+     <span class="o">}</span>
+     <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+ <span class="o">}</span>
+</code></pre></div></div>
+
+<p>后面通过startActivity方法到Instrumentation的execStartActivity方法，</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//frameworks/base/core/java/android/app/Instrumentation.java</span>
+<span class="kd">public</span> <span class="nc">ActivityResult</span> <span class="nf">execStartActivity</span><span class="o">(</span>
+          <span class="nc">Context</span> <span class="n">who</span><span class="o">,</span> <span class="nc">IBinder</span> <span class="n">contextThread</span><span class="o">,</span> <span class="nc">IBinder</span> <span class="n">token</span><span class="o">,</span> <span class="nc">Activity</span> <span class="n">target</span><span class="o">,</span>
+          <span class="nc">Intent</span> <span class="n">intent</span><span class="o">,</span> <span class="kt">int</span> <span class="n">requestCode</span><span class="o">,</span> <span class="nc">Bundle</span> <span class="n">options</span><span class="o">)</span> <span class="o">{</span>
+      <span class="o">...</span>
+      <span class="k">try</span> <span class="o">{</span>
+          <span class="n">intent</span><span class="o">.</span><span class="na">migrateExtraStreamToClipData</span><span class="o">();</span>
+          <span class="n">intent</span><span class="o">.</span><span class="na">prepareToLeaveProcess</span><span class="o">(</span><span class="n">who</span><span class="o">);</span>
+          <span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="nc">ActivityManager</span><span class="o">.</span><span class="na">getService</span><span class="o">()</span>
+              <span class="o">.</span><span class="na">startActivity</span><span class="o">(</span><span class="n">whoThread</span><span class="o">,</span> <span class="n">who</span><span class="o">.</span><span class="na">getBasePackageName</span><span class="o">(),</span> <span class="n">intent</span><span class="o">,</span>
+                      <span class="n">intent</span><span class="o">.</span><span class="na">resolveTypeIfNeeded</span><span class="o">(</span><span class="n">who</span><span class="o">.</span><span class="na">getContentResolver</span><span class="o">()),</span>
+                      <span class="n">token</span><span class="o">,</span> <span class="n">target</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">?</span> <span class="n">target</span><span class="o">.</span><span class="na">mEmbeddedID</span> <span class="o">:</span> <span class="kc">null</span><span class="o">,</span>
+                      <span class="n">requestCode</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">options</span><span class="o">);</span>
+          <span class="n">checkStartActivityResult</span><span class="o">(</span><span class="n">result</span><span class="o">,</span> <span class="n">intent</span><span class="o">);</span>
+      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">RemoteException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+          <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="s">"Failure from system"</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+      <span class="o">}</span>
+      <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p><img src="\img\activity\1.png" alt="1.png" /></p>
+
+<h3 id="ams启动">AMS启动</h3>
+
+<p>通过binder机制AIDL远程调用的是AMS（<strong>ActivityManagerService</strong>）的startActivity方法。</p>
+
+<p><img src="\img\activity\2.png" alt="2.png" /></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java</span>
+<span class="kd">public</span> <span class="kd">final</span> <span class="kt">int</span> <span class="nf">startActivityAsUser</span><span class="o">(</span><span class="nc">IApplicationThread</span> <span class="n">caller</span><span class="o">,</span> <span class="nc">String</span> <span class="n">callingPackage</span><span class="o">,</span>
+        <span class="nc">Intent</span> <span class="n">intent</span><span class="o">,</span> <span class="nc">String</span> <span class="n">resolvedType</span><span class="o">,</span> <span class="nc">IBinder</span> <span class="n">resultTo</span><span class="o">,</span> <span class="nc">String</span> <span class="n">resultWho</span><span class="o">,</span> <span class="kt">int</span> <span class="n">requestCode</span><span class="o">,</span>
+        <span class="kt">int</span> <span class="n">startFlags</span><span class="o">,</span> <span class="nc">ProfilerInfo</span> <span class="n">profilerInfo</span><span class="o">,</span> <span class="nc">Bundle</span> <span class="n">bOptions</span><span class="o">,</span> <span class="kt">int</span> <span class="n">userId</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">//判断调用者进程是否被隔离    </span>
+    <span class="n">enforceNotIsolatedCaller</span><span class="o">(</span><span class="s">"startActivity"</span><span class="o">);</span><span class="c1">//1</span>
+    <span class="c1">//检查调用者权限</span>
+    <span class="n">userId</span> <span class="o">=</span> <span class="n">mUserController</span><span class="o">.</span><span class="na">handleIncomingUser</span><span class="o">(</span><span class="nc">Binder</span><span class="o">.</span><span class="na">getCallingPid</span><span class="o">(),</span> <span class="nc">Binder</span><span class="o">.</span><span class="na">getCallingUid</span><span class="o">(),</span>
+            <span class="n">userId</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="no">ALLOW_FULL_ONLY</span><span class="o">,</span> <span class="s">"startActivity"</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span><span class="c1">//2</span>
+    <span class="k">return</span> <span class="n">mActivityStarter</span><span class="o">.</span><span class="na">startActivityMayWait</span><span class="o">(</span><span class="n">caller</span><span class="o">,</span> <span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="n">callingPackage</span><span class="o">,</span> <span class="n">intent</span><span class="o">,</span>
+            <span class="n">resolvedType</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">resultTo</span><span class="o">,</span> <span class="n">resultWho</span><span class="o">,</span> <span class="n">requestCode</span><span class="o">,</span> <span class="n">startFlags</span><span class="o">,</span>
+            <span class="n">profilerInfo</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">bOptions</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="n">userId</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span>
+            <span class="s">"startActivityAsUser"</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>后面进入ActivityStarter中：</p>
+
+<p>加载Activity的控制类，会收集所有的逻辑来决定如何将Intent和Flags转换为Activity，并将Activity和Task以及Stack相关联。ActivityStarter的startActivityMayWait方法调用了startActivityLocked方法</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">startActivityLocked</span><span class="o">(</span><span class="nc">IApplicationThread</span> <span class="n">caller</span><span class="o">,</span> <span class="nc">Intent</span> <span class="n">intent</span><span class="o">,</span> <span class="nc">Intent</span> <span class="n">ephemeralIntent</span><span class="o">,</span>
+         <span class="nc">String</span> <span class="n">resolvedType</span><span class="o">,</span> <span class="nc">ActivityInfo</span> <span class="n">aInfo</span><span class="o">,</span> <span class="nc">ResolveInfo</span> <span class="n">rInfo</span><span class="o">,</span>
+         <span class="nc">IVoiceInteractionSession</span> <span class="n">voiceSession</span><span class="o">,</span> <span class="nc">IVoiceInteractor</span> <span class="n">voiceInteractor</span><span class="o">,</span>
+         <span class="nc">IBinder</span> <span class="n">resultTo</span><span class="o">,</span> <span class="nc">String</span> <span class="n">resultWho</span><span class="o">,</span> <span class="kt">int</span> <span class="n">requestCode</span><span class="o">,</span> <span class="kt">int</span> <span class="n">callingPid</span><span class="o">,</span> <span class="kt">int</span> <span class="n">callingUid</span><span class="o">,</span>
+         <span class="nc">String</span> <span class="n">callingPackage</span><span class="o">,</span> <span class="kt">int</span> <span class="n">realCallingPid</span><span class="o">,</span> <span class="kt">int</span> <span class="n">realCallingUid</span><span class="o">,</span> <span class="kt">int</span> <span class="n">startFlags</span><span class="o">,</span>
+         <span class="nc">ActivityOptions</span> <span class="n">options</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">ignoreTargetSecurity</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">componentSpecified</span><span class="o">,</span>
+         <span class="nc">ActivityRecord</span><span class="o">[]</span> <span class="n">outActivity</span><span class="o">,</span> <span class="nc">ActivityStackSupervisor</span><span class="o">.</span><span class="na">ActivityContainer</span> <span class="n">container</span><span class="o">,</span>
+         <span class="nc">TaskRecord</span> <span class="n">inTask</span><span class="o">,</span> <span class="nc">String</span> <span class="n">reason</span><span class="o">)</span> <span class="o">{</span>
+     <span class="c1">//判断启动的理由不为空</span>
+     <span class="k">if</span> <span class="o">(</span><span class="nc">TextUtils</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">(</span><span class="n">reason</span><span class="o">))</span> <span class="o">{</span><span class="c1">//1</span>
+         <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span><span class="s">"Need to specify a reason."</span><span class="o">);</span>
+     <span class="o">}</span>
+     <span class="n">mLastStartReason</span> <span class="o">=</span> <span class="n">reason</span><span class="o">;</span>
+     <span class="n">mLastStartActivityTimeMs</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+     <span class="n">mLastStartActivityRecord</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+     <span class="n">mLastStartActivityResult</span> <span class="o">=</span> <span class="n">startActivity</span><span class="o">(</span><span class="n">caller</span><span class="o">,</span> <span class="n">intent</span><span class="o">,</span> <span class="n">ephemeralIntent</span><span class="o">,</span> <span class="n">resolvedType</span><span class="o">,</span>
+             <span class="n">aInfo</span><span class="o">,</span> <span class="n">rInfo</span><span class="o">,</span> <span class="n">voiceSession</span><span class="o">,</span> <span class="n">voiceInteractor</span><span class="o">,</span> <span class="n">resultTo</span><span class="o">,</span> <span class="n">resultWho</span><span class="o">,</span> <span class="n">requestCode</span><span class="o">,</span>
+             <span class="n">callingPid</span><span class="o">,</span> <span class="n">callingUid</span><span class="o">,</span> <span class="n">callingPackage</span><span class="o">,</span> <span class="n">realCallingPid</span><span class="o">,</span> <span class="n">realCallingUid</span><span class="o">,</span> <span class="n">startFlags</span><span class="o">,</span>
+             <span class="n">options</span><span class="o">,</span> <span class="n">ignoreTargetSecurity</span><span class="o">,</span> <span class="n">componentSpecified</span><span class="o">,</span> <span class="n">mLastStartActivityRecord</span><span class="o">,</span>
+             <span class="n">container</span><span class="o">,</span> <span class="n">inTask</span><span class="o">);</span>
+     <span class="k">if</span> <span class="o">(</span><span class="n">outActivity</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+         <span class="n">outActivity</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">=</span> <span class="n">mLastStartActivityRecord</span><span class="o">[</span><span class="mi">0</span><span class="o">];</span>
+     <span class="o">}</span>
+     <span class="k">return</span> <span class="n">mLastStartActivityResult</span><span class="o">;</span>
+ <span class="o">}</span>
+</code></pre></div></div>
+
+<p>判断处理异常后，进入startActivity，创建ActivityRecord，TaskRecord，处理栈管理相关的逻辑。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// frameworks/base/services/core/java/com/android/server/am/ActivityStarter.java  </span>
+<span class="kd">private</span> <span class="kt">int</span> <span class="nf">startActivityUnchecked</span><span class="o">(</span><span class="kd">final</span> <span class="nc">ActivityRecord</span> <span class="n">r</span><span class="o">,</span> <span class="nc">ActivityRecord</span> <span class="n">sourceRecord</span><span class="o">,</span>
+            <span class="nc">IVoiceInteractionSession</span> <span class="n">voiceSession</span><span class="o">,</span> <span class="nc">IVoiceInteractor</span> <span class="n">voiceInteractor</span><span class="o">,</span>
+            <span class="kt">int</span> <span class="n">startFlags</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">doResume</span><span class="o">,</span> <span class="nc">ActivityOptions</span> <span class="n">options</span><span class="o">,</span> <span class="nc">TaskRecord</span> <span class="n">inTask</span><span class="o">,</span>
+            <span class="nc">ActivityRecord</span><span class="o">[]</span> <span class="n">outActivity</span><span class="o">)</span> <span class="o">{</span>
+<span class="o">...</span>
+ <span class="k">if</span> <span class="o">(</span><span class="n">mStartActivity</span><span class="o">.</span><span class="na">resultTo</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">mInTask</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">mAddingToTask</span>
+                <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">mLaunchFlags</span> <span class="o">&amp;</span> <span class="no">FLAG_ACTIVITY_NEW_TASK</span><span class="o">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span><span class="c1">//1</span>
+            <span class="n">newTask</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+            <span class="c1">//创建新的TaskRecord</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">setTaskFromReuseOrCreateNewTask</span><span class="o">(</span>
+                    <span class="n">taskToAffiliate</span><span class="o">,</span> <span class="n">preferredLaunchStackId</span><span class="o">,</span> <span class="n">topStack</span><span class="o">);</span><span class="c1">//2</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">mSourceRecord</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">setTaskFromSourceRecord</span><span class="o">();</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">mInTask</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">setTaskFromInTask</span><span class="o">();</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="n">setTaskToCurrentTopOrCreateNewTask</span><span class="o">();</span>
+        <span class="o">}</span>
+       <span class="o">...</span>
+ <span class="k">if</span> <span class="o">(</span><span class="n">mDoResume</span><span class="o">)</span> <span class="o">{</span>
+            <span class="kd">final</span> <span class="nc">ActivityRecord</span> <span class="n">topTaskActivity</span> <span class="o">=</span>
+                    <span class="n">mStartActivity</span><span class="o">.</span><span class="na">getTask</span><span class="o">().</span><span class="na">topRunningActivityLocked</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">mTargetStack</span><span class="o">.</span><span class="na">isFocusable</span><span class="o">()</span>
+                    <span class="o">||</span> <span class="o">(</span><span class="n">topTaskActivity</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">topTaskActivity</span><span class="o">.</span><span class="na">mTaskOverlay</span>
+                    <span class="o">&amp;&amp;</span> <span class="n">mStartActivity</span> <span class="o">!=</span> <span class="n">topTaskActivity</span><span class="o">))</span> <span class="o">{</span>
+               <span class="o">...</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">mTargetStack</span><span class="o">.</span><span class="na">isFocusable</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">mSupervisor</span><span class="o">.</span><span class="na">isFocusedStack</span><span class="o">(</span><span class="n">mTargetStack</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="n">mTargetStack</span><span class="o">.</span><span class="na">moveToFront</span><span class="o">(</span><span class="s">"startActivityUnchecked"</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="n">mSupervisor</span><span class="o">.</span><span class="na">resumeFocusedStackTopActivityLocked</span><span class="o">(</span><span class="n">mTargetStack</span><span class="o">,</span> <span class="n">mStartActivity</span><span class="o">,</span>
+                        <span class="n">mOptions</span><span class="o">);</span><span class="c1">//3</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="n">mTargetStack</span><span class="o">.</span><span class="na">addRecentActivityLocked</span><span class="o">(</span><span class="n">mStartActivity</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="o">...</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>后续进入到ActivityStackSupervisor的resumeFocusedStackTopActivityLocked方法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// frameworks/base/services/core/java/com/android/server/am/ActivityStackSupervisor.java</span>
+<span class="kt">boolean</span> <span class="nf">resumeFocusedStackTopActivityLocked</span><span class="o">(</span>
+        <span class="nc">ActivityStack</span> <span class="n">targetStack</span><span class="o">,</span> <span class="nc">ActivityRecord</span> <span class="n">target</span><span class="o">,</span> <span class="nc">ActivityOptions</span> <span class="n">targetOptions</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">targetStack</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">isFocusedStack</span><span class="o">(</span><span class="n">targetStack</span><span class="o">))</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="n">targetStack</span><span class="o">.</span><span class="na">resumeTopActivityUncheckedLocked</span><span class="o">(</span><span class="n">target</span><span class="o">,</span> <span class="n">targetOptions</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="c1">//获取要启动的Activity所在栈的栈顶的不是处于停止状态的ActivityRecord</span>
+    <span class="kd">final</span> <span class="nc">ActivityRecord</span> <span class="n">r</span> <span class="o">=</span> <span class="n">mFocusedStack</span><span class="o">.</span><span class="na">topRunningActivityLocked</span><span class="o">();</span><span class="c1">//1</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">r</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">r</span><span class="o">.</span><span class="na">state</span> <span class="o">!=</span> <span class="no">RESUMED</span><span class="o">)</span> <span class="o">{</span><span class="c1">//2</span>
+        <span class="n">mFocusedStack</span><span class="o">.</span><span class="na">resumeTopActivityUncheckedLocked</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span><span class="c1">//3</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">state</span> <span class="o">==</span> <span class="no">RESUMED</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">mFocusedStack</span><span class="o">.</span><span class="na">executeAppTransition</span><span class="o">(</span><span class="n">targetOptions</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>注释1处调用ActivityStack的topRunningActivityLocked方法获取要启动的Activity所在栈的栈顶的不是处于停止状态的ActivityRecord。注释2处如果ActivityRecord不为null，或者要启动的Activity的状态不是RESUMED状态，就会调用注释3处的ActivityStack的resumeTopActivityUncheckedLocked方法，对于即将要启动的Activity，</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// frameworks/base/services/core/java/com/android/server/am/ActivityStack.java</span>
+<span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">resumeTopActivityInnerLocked</span><span class="o">(</span><span class="nc">ActivityRecord</span> <span class="n">prev</span><span class="o">,</span> <span class="nc">ActivityOptions</span> <span class="n">options</span><span class="o">)</span> <span class="o">{</span>
+      <span class="o">...</span>
+           <span class="n">mStackSupervisor</span><span class="o">.</span><span class="na">startSpecificActivityLocked</span><span class="o">(</span><span class="n">next</span><span class="o">,</span> <span class="kc">true</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+       <span class="o">}</span>
+        <span class="k">if</span> <span class="o">(</span><span class="no">DEBUG_STACK</span><span class="o">)</span> <span class="n">mStackSupervisor</span><span class="o">.</span><span class="na">validateTopActivitiesLocked</span><span class="o">();</span>
+       <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>调用了ActivityStackSupervisor的startSpecificActivityLocked方法</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// frameworks/base/services/core/java/com/android/server/am/ActivityStackSupervisor.java</span>
+<span class="kt">void</span> <span class="nf">startSpecificActivityLocked</span><span class="o">(</span><span class="nc">ActivityRecord</span> <span class="n">r</span><span class="o">,</span>
+           <span class="kt">boolean</span> <span class="n">andResume</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">checkConfig</span><span class="o">)</span> <span class="o">{</span>
+       <span class="c1">//获取即将要启动的Activity的所在的应用程序进程</span>
+       <span class="nc">ProcessRecord</span> <span class="n">app</span> <span class="o">=</span> <span class="n">mService</span><span class="o">.</span><span class="na">getProcessRecordLocked</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">processName</span><span class="o">,</span>
+               <span class="n">r</span><span class="o">.</span><span class="na">info</span><span class="o">.</span><span class="na">applicationInfo</span><span class="o">.</span><span class="na">uid</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span><span class="c1">//1</span>
+       <span class="n">r</span><span class="o">.</span><span class="na">getStack</span><span class="o">().</span><span class="na">setLaunchTime</span><span class="o">(</span><span class="n">r</span><span class="o">);</span>
+
+       <span class="k">if</span> <span class="o">(</span><span class="n">app</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">app</span><span class="o">.</span><span class="na">thread</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span><span class="c1">//2</span>
+           <span class="k">try</span> <span class="o">{</span>
+               <span class="k">if</span> <span class="o">((</span><span class="n">r</span><span class="o">.</span><span class="na">info</span><span class="o">.</span><span class="na">flags</span><span class="o">&amp;</span><span class="nc">ActivityInfo</span><span class="o">.</span><span class="na">FLAG_MULTIPROCESS</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span>
+                       <span class="o">||</span> <span class="o">!</span><span class="s">"android"</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">info</span><span class="o">.</span><span class="na">packageName</span><span class="o">))</span> <span class="o">{</span>
+                   <span class="n">app</span><span class="o">.</span><span class="na">addPackage</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">info</span><span class="o">.</span><span class="na">packageName</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">info</span><span class="o">.</span><span class="na">applicationInfo</span><span class="o">.</span><span class="na">versionCode</span><span class="o">,</span>
+                           <span class="n">mService</span><span class="o">.</span><span class="na">mProcessStats</span><span class="o">);</span>
+               <span class="o">}</span>
+               <span class="n">realStartActivityLocked</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="n">app</span><span class="o">,</span> <span class="n">andResume</span><span class="o">,</span> <span class="n">checkConfig</span><span class="o">);</span><span class="c1">//3</span>
+               <span class="k">return</span><span class="o">;</span>
+           <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">RemoteException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+               <span class="nc">Slog</span><span class="o">.</span><span class="na">w</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Exception when starting activity "</span>
+                       <span class="o">+</span> <span class="n">r</span><span class="o">.</span><span class="na">intent</span><span class="o">.</span><span class="na">getComponent</span><span class="o">().</span><span class="na">flattenToShortString</span><span class="o">(),</span> <span class="n">e</span><span class="o">);</span>
+           <span class="o">}</span>
+       <span class="o">}</span>
+       <span class="n">mService</span><span class="o">.</span><span class="na">startProcessLocked</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">processName</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">info</span><span class="o">.</span><span class="na">applicationInfo</span><span class="o">,</span> <span class="kc">true</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span>
+               <span class="s">"activity"</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">intent</span><span class="o">.</span><span class="na">getComponent</span><span class="o">(),</span> <span class="kc">false</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+   <span class="o">}</span>
+</code></pre></div></div>
+
+<p>注释1处获取即将要启动的Activity的所在的应用程序进程，注释2处判断要启动的Activity的所在应用程序进程已经运行的话，就会调用注释3处的realStartActivityLocked方法，需要注意的是，这个方法的第二个参数是代表要启动的Activity的所在的应用程序进程的ProcessRecord。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kt">boolean</span> <span class="nf">realStartActivityLocked</span><span class="o">(</span><span class="nc">ActivityRecord</span> <span class="n">r</span><span class="o">,</span> <span class="nc">ProcessRecord</span> <span class="n">app</span><span class="o">,</span>
+          <span class="kt">boolean</span> <span class="n">andResume</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">checkConfig</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">RemoteException</span> <span class="o">{</span>
+   <span class="o">...</span>
+          <span class="n">app</span><span class="o">.</span><span class="na">thread</span><span class="o">.</span><span class="na">scheduleLaunchActivity</span><span class="o">(</span><span class="k">new</span> <span class="nc">Intent</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">intent</span><span class="o">),</span> <span class="n">r</span><span class="o">.</span><span class="na">appToken</span><span class="o">,</span>
+                  <span class="nc">System</span><span class="o">.</span><span class="na">identityHashCode</span><span class="o">(</span><span class="n">r</span><span class="o">),</span> <span class="n">r</span><span class="o">.</span><span class="na">info</span><span class="o">,</span> <span class="k">new</span> <span class="nc">Configuration</span><span class="o">(</span><span class="n">mService</span><span class="o">.</span><span class="na">mConfiguration</span><span class="o">),</span>
+                  <span class="k">new</span> <span class="nf">Configuration</span><span class="o">(</span><span class="n">task</span><span class="o">.</span><span class="na">mOverrideConfig</span><span class="o">),</span> <span class="n">r</span><span class="o">.</span><span class="na">compat</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">launchedFromPackage</span><span class="o">,</span>
+                  <span class="n">task</span><span class="o">.</span><span class="na">voiceInteractor</span><span class="o">,</span> <span class="n">app</span><span class="o">.</span><span class="na">repProcState</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">icicle</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">persistentState</span><span class="o">,</span> <span class="n">results</span><span class="o">,</span>
+                  <span class="n">newIntents</span><span class="o">,</span> <span class="o">!</span><span class="n">andResume</span><span class="o">,</span> <span class="n">mService</span><span class="o">.</span><span class="na">isNextTransitionForward</span><span class="o">(),</span> <span class="n">profilerInfo</span><span class="o">);</span>
+  <span class="o">...</span>      
+      <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>app.thread为ActivityThread的内部类ApplicationThread，通过ApplicationThread来与应用程序进程进行Binder通信，ApplicationThread是AMS所在进程（SyetemServer进程）和应用程序进程的通信桥梁。</p>
+
+<h3 id="activitythread启动activity">ActivityThread启动activity</h3>
+
+<p>ApplicationThread是ActivityThread的内部类，应用程序进程创建后会运行代表主线程的实例ActivityThread，它管理着当前应用程序进程的线程。ApplicationThread的scheduleLaunchActivity方法:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//frameworks/base/core/java/android/app/ActivityThread.java</span>
+<span class="kd">public</span> <span class="kd">final</span> <span class="kt">void</span> <span class="nf">scheduleLaunchActivity</span><span class="o">(</span><span class="nc">Intent</span> <span class="n">intent</span><span class="o">,</span> <span class="nc">IBinder</span> <span class="n">token</span><span class="o">,</span> <span class="kt">int</span> <span class="n">ident</span><span class="o">,</span>
+        <span class="nc">ActivityInfo</span> <span class="n">info</span><span class="o">,</span> <span class="nc">Configuration</span> <span class="n">curConfig</span><span class="o">,</span> <span class="nc">Configuration</span> <span class="n">overrideConfig</span><span class="o">,</span>
+        <span class="nc">CompatibilityInfo</span> <span class="n">compatInfo</span><span class="o">,</span> <span class="nc">String</span> <span class="n">referrer</span><span class="o">,</span> <span class="nc">IVoiceInteractor</span> <span class="n">voiceInteractor</span><span class="o">,</span>
+        <span class="kt">int</span> <span class="n">procState</span><span class="o">,</span> <span class="nc">Bundle</span> <span class="n">state</span><span class="o">,</span> <span class="nc">PersistableBundle</span> <span class="n">persistentState</span><span class="o">,</span>
+        <span class="nc">List</span><span class="o">&lt;</span><span class="nc">ResultInfo</span><span class="o">&gt;</span> <span class="n">pendingResults</span><span class="o">,</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">ReferrerIntent</span><span class="o">&gt;</span> <span class="n">pendingNewIntents</span><span class="o">,</span>
+        <span class="kt">boolean</span> <span class="n">notResumed</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">isForward</span><span class="o">,</span> <span class="nc">ProfilerInfo</span> <span class="n">profilerInfo</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">updateProcessState</span><span class="o">(</span><span class="n">procState</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+    <span class="nc">ActivityClientRecord</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ActivityClientRecord</span><span class="o">();</span>
+    <span class="n">r</span><span class="o">.</span><span class="na">token</span> <span class="o">=</span> <span class="n">token</span><span class="o">;</span>
+    <span class="n">r</span><span class="o">.</span><span class="na">ident</span> <span class="o">=</span> <span class="n">ident</span><span class="o">;</span>
+    <span class="n">r</span><span class="o">.</span><span class="na">intent</span> <span class="o">=</span> <span class="n">intent</span><span class="o">;</span>
+    <span class="n">r</span><span class="o">.</span><span class="na">referrer</span> <span class="o">=</span> <span class="n">referrer</span><span class="o">;</span>
+    <span class="o">...</span>
+    <span class="n">updatePendingConfiguration</span><span class="o">(</span><span class="n">curConfig</span><span class="o">);</span>
+    <span class="n">sendMessage</span><span class="o">(</span><span class="no">H</span><span class="o">.</span><span class="na">LAUNCH_ACTIVITY</span><span class="o">,</span> <span class="n">r</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>通过handler发送类型 H.LAUNCH_ACTIVITY的消息：最后调用handleLaunchActivity：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">private</span> <span class="kt">void</span> <span class="nf">handleLaunchActivity</span><span class="o">(</span><span class="nc">ActivityClientRecord</span> <span class="n">r</span><span class="o">,</span> <span class="nc">Intent</span> <span class="n">customIntent</span><span class="o">,</span> <span class="nc">String</span> <span class="n">reason</span><span class="o">)</span> <span class="o">{</span>
+    <span class="o">...</span>
+    <span class="nc">WindowManagerGlobal</span><span class="o">.</span><span class="na">initialize</span><span class="o">();</span>
+    <span class="c1">//启动Activity</span>
+    <span class="nc">Activity</span> <span class="n">a</span> <span class="o">=</span> <span class="n">performLaunchActivity</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="n">customIntent</span><span class="o">);</span><span class="c1">//1</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">a</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">createdConfig</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Configuration</span><span class="o">(</span><span class="n">mConfiguration</span><span class="o">);</span>
+        <span class="n">reportSizeConfigurations</span><span class="o">(</span><span class="n">r</span><span class="o">);</span>
+        <span class="nc">Bundle</span> <span class="n">oldState</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">state</span><span class="o">;</span>
+        <span class="c1">//将Activity的状态置为Resume</span>
+        <span class="n">handleResumeActivity</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">token</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">isForward</span><span class="o">,</span>
+                <span class="o">!</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mFinished</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">r</span><span class="o">.</span><span class="na">startsNotResumed</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">lastProcessedSeq</span><span class="o">,</span> <span class="n">reason</span><span class="o">);</span><span class="c1">//2</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mFinished</span> <span class="o">&amp;&amp;</span> <span class="n">r</span><span class="o">.</span><span class="na">startsNotResumed</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">performPauseActivityIfNeeded</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="n">reason</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">isPreHoneycomb</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">r</span><span class="o">.</span><span class="na">state</span> <span class="o">=</span> <span class="n">oldState</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="c1">//停止Activity启动</span>
+            <span class="nc">ActivityManager</span><span class="o">.</span><span class="na">getService</span><span class="o">()</span>
+                <span class="o">.</span><span class="na">finishActivity</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">token</span><span class="o">,</span> <span class="nc">Activity</span><span class="o">.</span><span class="na">RESULT_CANCELED</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span>
+                        <span class="nc">Activity</span><span class="o">.</span><span class="na">DONT_FINISH_TASK_WITH_ACTIVITY</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">RemoteException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="n">ex</span><span class="o">.</span><span class="na">rethrowFromSystemServer</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>启动activity ：performLaunchActivity方法</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="nc">Activity</span> <span class="nf">performLaunchActivity</span><span class="o">(</span><span class="nc">ActivityClientRecord</span> <span class="n">r</span><span class="o">,</span> <span class="nc">Intent</span> <span class="n">customIntent</span><span class="o">)</span> <span class="o">{</span>
+       <span class="c1">//获取ActivityInfo类</span>
+       <span class="nc">ActivityInfo</span> <span class="n">aInfo</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">activityInfo</span><span class="o">;</span><span class="c1">//1</span>
+       <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">packageInfo</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+       <span class="c1">//获取APK文件的描述类LoadedApk</span>
+           <span class="n">r</span><span class="o">.</span><span class="na">packageInfo</span> <span class="o">=</span> <span class="n">getPackageInfo</span><span class="o">(</span><span class="n">aInfo</span><span class="o">.</span><span class="na">applicationInfo</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">compatInfo</span><span class="o">,</span>
+                   <span class="nc">Context</span><span class="o">.</span><span class="na">CONTEXT_INCLUDE_CODE</span><span class="o">);</span><span class="c1">//2</span>
+       <span class="o">}</span>
+
+       <span class="nc">ComponentName</span> <span class="n">component</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">intent</span><span class="o">.</span><span class="na">getComponent</span><span class="o">();</span><span class="c1">//3</span>
+       <span class="o">...</span>
+       <span class="c1">//创建要启动Activity的上下文环境</span>
+       <span class="nc">ContextImpl</span> <span class="n">appContext</span> <span class="o">=</span> <span class="n">createBaseContextForActivity</span><span class="o">(</span><span class="n">r</span><span class="o">);</span><span class="c1">//4</span>
+       <span class="nc">Activity</span> <span class="n">activity</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+       <span class="k">try</span> <span class="o">{</span>
+           <span class="n">java</span><span class="o">.</span><span class="na">lang</span><span class="o">.</span><span class="na">ClassLoader</span> <span class="n">cl</span> <span class="o">=</span> <span class="n">appContext</span><span class="o">.</span><span class="na">getClassLoader</span><span class="o">();</span>
+           <span class="c1">//用类加载器来创建该Activity的实例</span>
+           <span class="n">activity</span> <span class="o">=</span> <span class="n">mInstrumentation</span><span class="o">.</span><span class="na">newActivity</span><span class="o">(</span>
+                   <span class="n">cl</span><span class="o">,</span> <span class="n">component</span><span class="o">.</span><span class="na">getClassName</span><span class="o">(),</span> <span class="n">r</span><span class="o">.</span><span class="na">intent</span><span class="o">);</span><span class="c1">//5</span>
+         <span class="o">...</span>
+       <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+         <span class="o">...</span>
+       <span class="o">}</span>
+
+       <span class="k">try</span> <span class="o">{</span>
+           <span class="c1">//创建Application</span>
+           <span class="nc">Application</span> <span class="n">app</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">packageInfo</span><span class="o">.</span><span class="na">makeApplication</span><span class="o">(</span><span class="kc">false</span><span class="o">,</span> <span class="n">mInstrumentation</span><span class="o">);</span><span class="c1">//6</span>
+           <span class="o">...</span>
+           <span class="k">if</span> <span class="o">(</span><span class="n">activity</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+              <span class="o">...</span>
+               <span class="cm">/**
+               *7 初始化Activity
+               */</span>
+               <span class="n">activity</span><span class="o">.</span><span class="na">attach</span><span class="o">(</span><span class="n">appContext</span><span class="o">,</span> <span class="k">this</span><span class="o">,</span> <span class="n">getInstrumentation</span><span class="o">(),</span> <span class="n">r</span><span class="o">.</span><span class="na">token</span><span class="o">,</span>
+                       <span class="n">r</span><span class="o">.</span><span class="na">ident</span><span class="o">,</span> <span class="n">app</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">intent</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">activityInfo</span><span class="o">,</span> <span class="n">title</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">parent</span><span class="o">,</span>
+                       <span class="n">r</span><span class="o">.</span><span class="na">embeddedID</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">lastNonConfigurationInstances</span><span class="o">,</span> <span class="n">config</span><span class="o">,</span>
+                       <span class="n">r</span><span class="o">.</span><span class="na">referrer</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">voiceInteractor</span><span class="o">,</span> <span class="n">window</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">configCallback</span><span class="o">);</span>
+
+              <span class="o">...</span>
+               <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">isPersistable</span><span class="o">())</span> <span class="o">{</span>
+                   <span class="n">mInstrumentation</span><span class="o">.</span><span class="na">callActivityOnCreate</span><span class="o">(</span><span class="n">activity</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">state</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">persistentState</span><span class="o">);</span><span class="c1">//8</span>
+               <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                   <span class="n">mInstrumentation</span><span class="o">.</span><span class="na">callActivityOnCreate</span><span class="o">(</span><span class="n">activity</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">state</span><span class="o">);</span>
+               <span class="o">}</span>
+              <span class="o">...</span>
+           <span class="o">}</span>
+           <span class="n">r</span><span class="o">.</span><span class="na">paused</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+           <span class="n">mActivities</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">token</span><span class="o">,</span> <span class="n">r</span><span class="o">);</span>
+       <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">SuperNotCalledException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+           <span class="k">throw</span> <span class="n">e</span><span class="o">;</span>
+       <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+         <span class="o">...</span>
+       <span class="o">}</span>
+
+       <span class="k">return</span> <span class="n">activity</span><span class="o">;</span>
+   <span class="o">}</span>
+</code></pre></div></div>
+
+<p>注释1处用来获取ActivityInfo，ActivityInfo用于存储代码和AndroidManifes设置的Activity和receiver节点信息，比如Activity的theme和launchMode。在注释2处获取APK文件的描述类LoadedApk。注释3处获取要启动的Activity的ComponentName类，ComponentName类中保存了该Activity的包名和类名。注释4处用来创建要启动Activity的上下文环境。注释5处根据ComponentName中存储的Activity类名，用类加载器来创建该Activity的实例。注释6处用来创建Application，makeApplication方法内部会调用Application的onCreate方法。注释7处调用Activity的attach方法初始化Activity，attach方法中会创建Window对象（PhoneWindow）并与Activity自身进行关联。注释8处会调用Instrumentation的callActivityOnCreate方法来启动Activity</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// frameworks/base/core/java/android/app/Instrumentation.java</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">callActivityOnCreate</span><span class="o">(</span><span class="nc">Activity</span> <span class="n">activity</span><span class="o">,</span> <span class="nc">Bundle</span> <span class="n">icicle</span><span class="o">,</span>
+          <span class="nc">PersistableBundle</span> <span class="n">persistentState</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">prePerformCreate</span><span class="o">(</span><span class="n">activity</span><span class="o">);</span>
+      <span class="n">activity</span><span class="o">.</span><span class="na">performCreate</span><span class="o">(</span><span class="n">icicle</span><span class="o">,</span> <span class="n">persistentState</span><span class="o">);</span><span class="c1">//1</span>
+      <span class="n">postPerformCreate</span><span class="o">(</span><span class="n">activity</span><span class="o">);</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>performCreate详情：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// frameworks/base/core/java/android/app/Activity.java</span>
+<span class="kd">final</span> <span class="kt">void</span> <span class="nf">performCreate</span><span class="o">(</span><span class="nc">Bundle</span> <span class="n">icicle</span><span class="o">,</span> <span class="nc">PersistableBundle</span> <span class="n">persistentState</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">restoreHasCurrentPermissionRequest</span><span class="o">(</span><span class="n">icicle</span><span class="o">);</span>
+      <span class="n">onCreate</span><span class="o">(</span><span class="n">icicle</span><span class="o">,</span> <span class="n">persistentState</span><span class="o">);</span>
+      <span class="n">mActivityTransitionState</span><span class="o">.</span><span class="na">readState</span><span class="o">(</span><span class="n">icicle</span><span class="o">);</span>
+      <span class="n">performCreateCommon</span><span class="o">();</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+
+<p>执行activity的生命周期 onCreate方法。</p>
+
+<h4 id="根activity启动过程中涉及的进程"><strong>根Activity启动过程中涉及的进程</strong></h4>
+
+<p><img src="\img\activity\3.png" alt="3.png" /></p>
+
+<p>Launcher进程向AMS请求创建根Activity，AMS会判断根Activity所需的应用程序进程是否存在并启动，如果不存在就会请求Zygote进程创建应用程序进程。应用程序进程准备就绪后会通知AMS，AMS会请求应用程序进程创建根Activity。请求Zygote为Socket通信，ams的activity为binder通信。</p>
+
+<p>普通activity启动涉及两个进程：ams进程，app所在进程。</p>
+
+
+                <hr style="visibility: hidden;">
+
+                
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2021/04/08/%E7%B3%BB%E7%B5%B1%E5%90%AF%E5%8A%A8%E7%AE%80%E8%A6%81%E6%B5%81%E7%A8%8B/" data-toggle="tooltip" data-placement="top" title="系統启动简要流程">
+                        Previous<br>
+                        <span>系統启动简要流程</span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/2021/04/20/ButterKnife%E6%BA%90%E7%A0%81%E5%AE%9E%E7%8E%B0/" data-toggle="tooltip" data-placement="top" title="ButterKnife源码实现">
+                        Next<br>
+                        <span>ButterKnife源码实现</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+
+
+                
+
+                
+
+            </div>  
+
+    <!-- Side Catalog Container -->
+        
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">目录</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+                				<a href="/tags/#博客" title="博客" rel="2">
+                                    博客
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Android" title="Android" rel="20">
+                                    Android
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Kotlin" title="Kotlin" rel="2">
+                                    Kotlin
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+                				<a href="/tags/#笔记" title="笔记" rel="2">
+                                    笔记
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#网络请求" title="网络请求" rel="2">
+                                    网络请求
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#源码分析" title="源码分析" rel="2">
+                                    源码分析
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+                				<a href="/tags/#JAVA" title="JAVA" rel="3">
+                                    JAVA
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#framework" title="framework" rel="5">
+                                    framework
+                                </a>
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="https://github.com/changweiba">常尾巴</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'always',
+          placement: 'right',
+          icon: '#'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    
+                    <li>
+                        <a href="https://twitter.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    <li>
+                        <a target="_blank" href="https://www.facebook.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/zhouhaoo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Zhouhao Blog 2021
+                    <br>
+                     Powered by <a href="http://jekyllrb.com/">jekyll</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+<!-- Service Worker -->
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/ 
+     - https://github.com/jneen/rouge/wiki/list-of-supported-languages-and-lexers   
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async('/js/jquery.tagcloud.js',function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-120305049-1';
+    var _gaDomain = 'auto';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
+
+
+
+
+
+<!-- Image to hack wechat -->
+<img src="/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>
